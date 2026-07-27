@@ -155,15 +155,19 @@ if 'email_temp' not in st.session_state:
 if not st.session_state.logado:
     col1, col2, col3 = st.columns([1, 1.4, 1])
     with col2:
-        # Exibe a imagem de logo no lugar do texto (se disponível no repositório)
+        # Exibe a logo centralizada e menor
         if os.path.exists("logo.jpg"):
-            st.image("logo.jpg", use_container_width=True)
+            c1, c2, c3 = st.columns([1, 1.2, 1])
+            with c2:
+                st.image("logo.jpg", use_container_width=True)
         elif os.path.exists("logo.png"):
-            st.image("logo.png", use_container_width=True)
+            c1, c2, c3 = st.columns([1, 1.2, 1])
+            with c2:
+                st.image("logo.png", use_container_width=True)
         else:
             st.markdown("<h1 style='text-align: center; color: #e91e63;'>💖 Salão Pink Fashion</h1>", unsafe_allow_html=True)
             
-        st.markdown("<h4 style='text-align: center; color: #888888; font-weight: 400;'>Gestão & Beleza</h4>", unsafe_allow_html=True)
+        st.markdown("<h4 style='text-align: center; color: #888888; font-weight: 400; margin-top: -10px;'>Gestão & Beleza</h4>", unsafe_allow_html=True)
         st.write("")
         
         aba_login, aba_cadastro = st.tabs(["🔐 Entrar", "📝 Cadastrar Novo Usuário"])
@@ -245,7 +249,7 @@ if not st.session_state.logado:
                     else:
                         st.error("Preencha todos os campos!")
 
-        # Rodapé com a estética exata solicitada
+        # Rodapé
         st.markdown("""
             <div style='text-align: center; margin-top: 50px;'>
                 <p style='font-family: "Courier New", Courier, monospace; font-size: 13px; color: #888888; letter-spacing: 0.5px;'>
@@ -365,7 +369,6 @@ else:
                     with st.form("form_venda_estoque", clear_on_submit=True):
                         col_a, col_b = st.columns(2)
                         nome_cliente = col_a.text_input("Nome da Cliente")
-                        # Padrão de data brasileiro (DD/MM/YYYY)
                         data_venda = col_b.date_input("Data do Atendimento/Venda", format="DD/MM/YYYY")
                         
                         opcoes_select = {f"{p['Produto']} ({p['Tamanho']}) - R$ {p['Valor (R$)']} | Qtd: {p['Quantidade']} un": p for p in pecas_disponiveis}
@@ -413,7 +416,6 @@ else:
                 with st.form("form_pedidos", clear_on_submit=True):
                     col_a, col_b = st.columns(2)
                     nome_cliente = col_a.text_input("Nome da Cliente")
-                    # Padrão de data brasileiro (DD/MM/YYYY)
                     data_entrega = col_b.date_input("Data Agendada para o Serviço", format="DD/MM/YYYY")
 
                     st.divider()
@@ -463,7 +465,7 @@ else:
                 if not df_pedidos_encomendas.empty:
                     st.dataframe(df_pedidos_encomendas, use_container_width=True)
                 else:
-                    st.info("Nenhum serviço agendado até o momento.")
+                    st.info("Nenum serviço agendado até o momento.")
             else:
                 st.info("Nenhum histórico de registros encontrado.")
 
