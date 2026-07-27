@@ -77,6 +77,42 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------------------------------
+# FUNÇÕES DE ESTILIZAÇÃO DO ESTOQUE
+# ----------------------------------------
+def colorir_estoque_pecas(row):
+    """Aplica cores para Produtos com base na coluna 'Quantidade'"""
+    try:
+        qtd = float(row['Quantidade'])
+    except (ValueError, TypeError):
+        return [''] * len(row)
+    
+    if qtd <= 5:
+        # Vermelho (Estoque baixo)
+        style = 'background-color: #ffcdd2; color: #801010; font-weight: 600;'
+    elif qtd <= 10:
+        # Amarelo (Estoque médio)
+        style = 'background-color: #fff9c4; color: #7a5c00; font-weight: 600;'
+    else:
+        # Verde (Estoque alto)
+        style = 'background-color: #c8e6c9; color: #1b5e20; font-weight: 600;'
+    return [style] * len(row)
+
+def colorir_estoque_materiais(row):
+    """Aplica cores para Materiais com base na coluna 'Metragem'"""
+    try:
+        qtd = float(row['Metragem'])
+    except (ValueError, TypeError):
+        return [''] * len(row)
+    
+    if qtd <= 5:
+        style = 'background-color: #ffcdd2; color: #801010; font-weight: 600;'
+    elif qtd <= 10:
+        style = 'background-color: #fff9c4; color: #7a5c00; font-weight: 600;'
+    else:
+        style = 'background-color: #c8e6c9; color: #1b5e20; font-weight: 600;'
+    return [style] * len(row)
+
+# ----------------------------------------
 # CONFIGURAÇÃO DE E-MAIL (REMETENTE)
 # ----------------------------------------
 EMAIL_REMETENTE = "natanaelcampossilva2006@gmail.com" 
@@ -155,7 +191,6 @@ if 'email_temp' not in st.session_state:
 if not st.session_state.logado:
     col1, col2, col3 = st.columns([1, 1.4, 1])
     with col2:
-        # Exibe a logo centralizada e menor
         if os.path.exists("logo.jpg"):
             c1, c2, c3 = st.columns([1, 1.2, 1])
             with c2:
@@ -249,7 +284,6 @@ if not st.session_state.logado:
                     else:
                         st.error("Preencha todos os campos!")
 
-        # Rodapé
         st.markdown("""
             <div style='text-align: center; margin-top: 50px;'>
                 <p style='font-family: "Courier New", Courier, monospace; font-size: 13px; color: #888888; letter-spacing: 0.5px;'>
@@ -329,12 +363,23 @@ else:
 
         with aba2:
             if st.session_state.estoque:
+                # Legenda das Cores
+                st.markdown("""
+                <div style="background-color: rgba(0,0,0,0.02); padding: 10px 15px; border-radius: 8px; border: 1px solid #eeeeee; margin-bottom: 20px;">
+                    <strong>🎨 Legenda de Alerta de Estoque:</strong>&nbsp;&nbsp;&nbsp;&nbsp;
+                    <span style="background-color: #ffcdd2; color: #801010; padding: 3px 10px; border-radius: 5px; font-weight: bold;">🔴 1 a 5 un (Baixo)</span>&nbsp;&nbsp;
+                    <span style="background-color: #fff9c4; color: #7a5c00; padding: 3px 10px; border-radius: 5px; font-weight: bold;">🟡 5 a 10 un (Médio)</span>&nbsp;&nbsp;
+                    <span style="background-color: #c8e6c9; color: #1b5e20; padding: 3px 10px; border-radius: 5px; font-weight: bold;">🟢 Mais de 10 un (Alto)</span>
+                </div>
+                """, unsafe_allow_html=True)
+
                 df_estoque = pd.DataFrame(st.session_state.estoque)
                 
                 st.subheader("🛍️ Produtos para Venda")
                 df_pecas = df_estoque[df_estoque['Categoria'] == 'Peça Pronta']
                 if not df_pecas.empty:
-                    st.dataframe(df_pecas, use_container_width=True)
+                    df_pecas_styled = df_pecas.style.apply(colorir_estoque_pecas, axis=1)
+                    st.dataframe(df_pecas_styled, use_container_width=True)
                 else:
                     st.info("Nenhum produto cadastrado para venda.")
                 
@@ -343,7 +388,8 @@ else:
                 st.subheader("💄 Insumos e Materiais de Uso")
                 df_materiais = df_estoque[df_estoque['Categoria'] == 'Material']
                 if not df_materiais.empty:
-                    st.dataframe(df_materiais, use_container_width=True)
+                    df_materiais_styled = df_materiais.style.apply(colorir_estoque_materiais, axis=1)
+                    st.dataframe(df_materiais_styled, use_container_width=True)
                 else:
                     st.info("Nenhum insumo cadastrado no estoque.")
             else:
@@ -465,7 +511,7 @@ else:
                 if not df_pedidos_encomendas.empty:
                     st.dataframe(df_pedidos_encomendas, use_container_width=True)
                 else:
-                    st.info("Nenum serviço agendado até o momento.")
+                    st.info("Nenhum serviço agendado até o momento.")
             else:
                 st.info("Nenhum histórico de registros encontrado.")
 
