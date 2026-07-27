@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit as st
 import pandas as pd
 from datetime import datetime
 import os
@@ -28,6 +27,7 @@ st.markdown("""
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
 
+    /* Estilização de Botões */
     .stButton > button {
         background: linear-gradient(135deg, #e91e63 0%, #ff4081 100%) !important;
         color: white !important;
@@ -44,6 +44,7 @@ st.markdown("""
         box-shadow: 0 6px 18px rgba(233, 30, 99, 0.4) !important;
     }
 
+    /* Cards de Métricas no Financeiro */
     div[data-testid="stMetric"] {
         background: rgba(233, 30, 99, 0.03);
         border: 1px solid rgba(233, 30, 99, 0.15);
@@ -57,6 +58,7 @@ st.markdown("""
         color: #888888;
     }
 
+    /* Modificação das Abas (Tabs) */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
     }
@@ -71,17 +73,12 @@ st.markdown("""
         background-color: rgba(233, 30, 99, 0.1) !important;
         color: #e91e63 !important;
     }
-
-    .footer-text {
-        text-align: center;
-        margin-top: 40px;
-        font-size: 13px;
-        color: #888888;
-        letter-spacing: 0.5px;
-    }
     </style>
 """, unsafe_allow_html=True)
 
+# ----------------------------------------
+# CONFIGURAÇÃO DE E-MAIL (REMETENTE)
+# ----------------------------------------
 EMAIL_REMETENTE = "natanaelcampossilva2006@gmail.com" 
 SENHA_APP = "bwpagsnxwcsxhlsm"
 
@@ -100,6 +97,9 @@ def enviar_codigo_email(email_destino, codigo):
     except Exception:
         return False
 
+# ----------------------------------------
+# CONFIGURAÇÃO DE ARQUIVOS LOCAIS
+# ----------------------------------------
 PASTA_DRIVE = "dados_sistema_pink_fashion"
 os.makedirs(PASTA_DRIVE, exist_ok=True) 
 
@@ -123,6 +123,9 @@ def converter_valor(valor):
     except Exception:
         return 0.0
 
+# ----------------------------------------
+# 2. INICIALIZAÇÃO DO ESTADO
+# ----------------------------------------
 if 'logado' not in st.session_state:
     st.session_state.logado = False
 if 'usuario_logado' not in st.session_state:
@@ -146,10 +149,20 @@ if 'codigo_gerado' not in st.session_state:
 if 'email_temp' not in st.session_state:
     st.session_state.email_temp = ""
 
+# ----------------------------------------
+# 3. TELA DE LOGIN E CADASTRO
+# ----------------------------------------
 if not st.session_state.logado:
     col1, col2, col3 = st.columns([1, 1.4, 1])
     with col2:
-        st.markdown("<h1 style='text-align: center; color: #e91e63;'>💖 Salão Pink Fashion</h1>", unsafe_allow_html=True)
+        # Exibe a imagem de logo no lugar do texto (se disponível no repositório)
+        if os.path.exists("logo.jpg"):
+            st.image("logo.jpg", use_container_width=True)
+        elif os.path.exists("logo.png"):
+            st.image("logo.png", use_container_width=True)
+        else:
+            st.markdown("<h1 style='text-align: center; color: #e91e63;'>💖 Salão Pink Fashion</h1>", unsafe_allow_html=True)
+            
         st.markdown("<h4 style='text-align: center; color: #888888; font-weight: 400;'>Gestão & Beleza</h4>", unsafe_allow_html=True)
         st.write("")
         
@@ -232,12 +245,18 @@ if not st.session_state.logado:
                     else:
                         st.error("Preencha todos os campos!")
 
+        # Rodapé com a estética exata solicitada
         st.markdown("""
-            <div class='footer-text'>
-                Desenvolvido com carinho por <span style='font-weight: bold; color: #e91e63;'>N.campos soluções</span>
+            <div style='text-align: center; margin-top: 50px;'>
+                <p style='font-family: "Courier New", Courier, monospace; font-size: 13px; color: #888888; letter-spacing: 0.5px;'>
+                    Desenvolvido por <span style='font-weight: bold; color: #ff4b4b;'>Optimus engenharia jr</span>
+                </p>
             </div>
         """, unsafe_allow_html=True)
 
+# ----------------------------------------
+# 4. SISTEMA PRINCIPAL
+# ----------------------------------------
 else:
     st.sidebar.markdown("<h2 style='color: #e91e63;'>💅 Pink Fashion</h2>", unsafe_allow_html=True)
     menu = ["📦 Estoque & Produtos", "🛍️ Atendimentos & Vendas", "📊 Painel Financeiro"]
@@ -249,6 +268,9 @@ else:
         st.session_state.logado = False
         st.rerun()
 
+    # ----------------------------------------
+    # MÓDULO 1: ESTOQUE E PRODUTOS
+    # ----------------------------------------
     if escolha == "📦 Estoque & Produtos":
         st.header("💅 Gestão de Estoque e Produtos")
         aba1, aba2 = st.tabs(["➕ Novo Cadastro", "📋 Inventário Atual"])
@@ -323,6 +345,9 @@ else:
             else:
                 st.info("O estoque está vazio no momento.")
 
+    # ----------------------------------------
+    # MÓDULO 2: ATENDIMENTOS E VENDAS
+    # ----------------------------------------
     elif escolha == "🛍️ Atendimentos & Vendas":
         st.header("🛍️ Atendimentos, Agendamentos e Vendas")
         aba1, aba2 = st.tabs(["🛒 Novo Registro", "🧾 Histórico de Movimentações"])
@@ -340,7 +365,8 @@ else:
                     with st.form("form_venda_estoque", clear_on_submit=True):
                         col_a, col_b = st.columns(2)
                         nome_cliente = col_a.text_input("Nome da Cliente")
-                        data_venda = col_b.date_input("Data do Atendimento/Venda")
+                        # Padrão de data brasileiro (DD/MM/YYYY)
+                        data_venda = col_b.date_input("Data do Atendimento/Venda", format="DD/MM/YYYY")
                         
                         opcoes_select = {f"{p['Produto']} ({p['Tamanho']}) - R$ {p['Valor (R$)']} | Qtd: {p['Quantidade']} un": p for p in pecas_disponiveis}
                         
@@ -387,7 +413,8 @@ else:
                 with st.form("form_pedidos", clear_on_submit=True):
                     col_a, col_b = st.columns(2)
                     nome_cliente = col_a.text_input("Nome da Cliente")
-                    data_entrega = col_b.date_input("Data Agendada para o Serviço")
+                    # Padrão de data brasileiro (DD/MM/YYYY)
+                    data_entrega = col_b.date_input("Data Agendada para o Serviço", format="DD/MM/YYYY")
 
                     st.divider()
                     produto_vendido = st.text_input("Serviço Solicitado (Ex: Cabelo, Unhas, Maquiagem)")
@@ -440,6 +467,9 @@ else:
             else:
                 st.info("Nenhum histórico de registros encontrado.")
 
+    # ----------------------------------------
+    # MÓDULO 3: FINANCEIRO
+    # ----------------------------------------
     elif escolha == "📊 Painel Financeiro":
         st.header("📊 Gestão Financeira e Métricas")
 
