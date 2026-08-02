@@ -6,6 +6,12 @@ import smtplib
 import random
 from email.mime.text import MIMEText
 
+# ----------------------------------------
+# ENDEREÇO DA LOGO NO GITHUB / REPOSITÓRIO
+# ----------------------------------------
+# Substitua 'logo.png' pelo nome da foto no seu repositório ou pela URL raw do GitHub
+URL_LOGO = "logo.png"
+
 # 1. Configuração da Página
 st.set_page_config(
     page_title="Salão Pink Fashion", 
@@ -27,18 +33,62 @@ st.markdown("""
         color: #3A132C;
     }
 
-    /* Títulos e Tipografia */
-    h1, h2, h3 {
+    /* Títulos Principais */
+    h1 {
         font-family: 'Playfair Display', serif !important;
         color: #4A154B !important;
         font-weight: 700 !important;
+        font-size: 40px !important;
         letter-spacing: -0.5px;
     }
 
-    /* Menu Lateral (Sidebar) */
+    /* Subtítulos de Seções e Cabeçalhos (AUMENTADOS) */
+    h2 {
+        font-family: 'Playfair Display', serif !important;
+        color: #4A154B !important;
+        font-weight: 700 !important;
+        font-size: 32px !important;
+        letter-spacing: -0.5px;
+    }
+
+    h3 {
+        font-family: 'Playfair Display', serif !important;
+        color: #4A154B !important;
+        font-weight: 600 !important;
+        font-size: 24px !important;
+    }
+
+    /* Subtítulos Descritivos das Páginas (AUMENTADOS) */
+    .subtitulo-pagina {
+        color: #77506A !important;
+        font-size: 18px !important;
+        font-weight: 400 !important;
+        margin-bottom: 22px !important;
+    }
+
+    /* Menu Lateral (Sidebar) - AUMENTO DE FONTE */
     section[data-testid="stSidebar"] {
         background-color: #FFFFFF !important;
         border-right: 1px solid #F3E2EC !important;
+    }
+
+    section[data-testid="stSidebar"] h2 {
+        font-size: 28px !important;
+    }
+
+    section[data-testid="stSidebar"] p {
+        font-size: 16px !important;
+    }
+
+    /* Opções do Radio Button na Sidebar (AUMENTADO) */
+    div[data-testid="stSidebar"] div[role="radiogroup"] label {
+        padding: 6px 0px !important;
+    }
+
+    div[data-testid="stSidebar"] div[role="radiogroup"] label p {
+        font-size: 18px !important;
+        font-weight: 500 !important;
+        color: #4A154B !important;
     }
 
     /* Cards, Métricas e Containers */
@@ -57,6 +107,7 @@ st.markdown("""
         color: #E05297 !important;
         font-family: 'Playfair Display', serif !important;
         font-weight: 700 !important;
+        font-size: 32px !important;
     }
 
     /* Botões Modernos e Arredondados */
@@ -66,8 +117,8 @@ st.markdown("""
         color: #FFFFFF !important;
         border: none !important;
         font-weight: 500 !important;
-        font-size: 14px !important;
-        padding: 0.55rem 1.2rem !important;
+        font-size: 15px !important;
+        padding: 0.6rem 1.3rem !important;
         box-shadow: 0 4px 14px rgba(224, 82, 151, 0.25) !important;
         transition: all 0.3s ease-in-out !important;
     }
@@ -83,12 +134,14 @@ st.markdown("""
     div[data-baseweb="select"] > div {
         border-radius: 10px !important;
         border-color: #EAD0E1 !important;
+        font-size: 15px !important;
     }
 
     /* Abas Navegáveis (Tabs) */
     button[data-baseweb="tab"] {
         font-family: 'Poppins', sans-serif !important;
         font-weight: 500 !important;
+        font-size: 16px !important;
         color: #88607A !important;
     }
 
@@ -181,10 +234,12 @@ if 'email_temp' not in st.session_state:
 if not st.session_state.logado:
     col1, col2, col3 = st.columns([1, 1.8, 1])
     with col2:
-        st.markdown("""
-            <div style='text-align: center; margin-top: 20px; margin-bottom: 25px;'>
+        # Exibição da Logo + Título "Salão Pink Fashion"
+        st.markdown(f"""
+            <div style='text-align: center; margin-top: 15px; margin-bottom: 20px;'>
+                <img src='{URL_LOGO}' style='max-width: 130px; width: 100%; height: auto; margin-bottom: 10px; border-radius: 12px;' onerror="this.style.display='none'">
                 <h1 style='font-size: 38px; margin-bottom: 0px;'>Salão Pink Fashion</h1>
-                <p style='color: #88607A; font-size: 15px; font-weight: 300; margin-top: 5px;'>Sistema Integrado de Gestão Beauty</p>
+                <p style='color: #88607A; font-size: 17px; font-weight: 400; margin-top: 5px;'>Sistema Integrado de Gestão Beauty</p>
             </div>
         """, unsafe_allow_html=True)
 
@@ -272,7 +327,7 @@ if not st.session_state.logado:
         # Rodapé com destaque para a Optimus Engenharia jr
         st.markdown("""
             <div style='text-align: center; margin-top: 45px;'>
-                <p style='font-size: 13px; color: #5A204B; font-weight: 500; letter-spacing: 0.5px; margin: 0;'>
+                <p style='font-size: 14px; color: #5A204B; font-weight: 500; letter-spacing: 0.5px; margin: 0;'>
                     Desenvolvido por <strong style='color: #C2185B; font-weight: 700;'>Optimus Engenharia jr</strong>
                 </p>
             </div>
@@ -280,8 +335,9 @@ if not st.session_state.logado:
 
 # 4. Sistema Principal
 else:
-    st.sidebar.markdown("<h2 style='font-size: 24px; margin-bottom: 5px;'>Pink Fashion</h2>", unsafe_allow_html=True)
-    st.sidebar.markdown("<p style='font-size: 12px; color: #88607A;'>Navegação do Sistema</p>", unsafe_allow_html=True)
+    # Cabeçalho da Sidebar (Fontes Aumentadas)
+    st.sidebar.markdown("<h2 style='font-size: 28px; margin-bottom: 5px;'>Pink Fashion</h2>", unsafe_allow_html=True)
+    st.sidebar.markdown("<p style='font-size: 16px; color: #88607A; margin-bottom: 20px;'>Navegação do Sistema</p>", unsafe_allow_html=True)
     
     menu_opcoes = {
         ":material/inventory_2: Gestão de Estoque": "Estoque",
@@ -293,7 +349,7 @@ else:
     escolha = menu_opcoes[escolha_formatada]
 
     st.sidebar.divider()
-    st.sidebar.markdown(f"Sessão ativa: <br>**{st.session_state.usuario_logado.capitalize()}**", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<p style='font-size: 16px;'>Sessão ativa: <br><strong style='font-size: 18px; color: #C2185B;'>{st.session_state.usuario_logado.capitalize()}</strong></p>", unsafe_allow_html=True)
     st.write("")
     if st.sidebar.button("Encerrar Sessão", use_container_width=True, icon=":material/logout:"):
         st.session_state.logado = False
@@ -304,7 +360,7 @@ else:
     # ----------------------------------------
     if escolha == "Estoque":
         st.header("Gestão de Estoque")
-        st.markdown("<p style='color: #77506A; margin-bottom: 20px;'>Controle de produtos e materiais em tempo real</p>", unsafe_allow_html=True)
+        st.markdown("<p class='subtitulo-pagina'>Controle de produtos e materiais em tempo real</p>", unsafe_allow_html=True)
         
         aba1, aba2 = st.tabs([
             ":material/add_box: Cadastrar Item", 
@@ -386,7 +442,7 @@ else:
     # ----------------------------------------
     elif escolha == "Vendas / Pedidos":
         st.header("Vendas & Agendamentos")
-        st.markdown("<p style='color: #77506A; margin-bottom: 20px;'>Registro de serviços prestados e vendas de balcão</p>", unsafe_allow_html=True)
+        st.markdown("<p class='subtitulo-pagina'>Registro de serviços prestados e vendas de balcão</p>", unsafe_allow_html=True)
 
         aba1, aba2 = st.tabs([
             ":material/add_shopping_cart: Novo Registro", 
@@ -510,7 +566,7 @@ else:
     # ----------------------------------------
     elif escolha == "Financeiro":
         st.header("Painel Financeiro")
-        st.markdown("<p style='color: #77506A; margin-bottom: 20px;'>Visão geral das métricas e saúde financeira do salão</p>", unsafe_allow_html=True)
+        st.markdown("<p class='subtitulo-pagina'>Visão geral das métricas e saúde financeira do salão</p>", unsafe_allow_html=True)
 
         receitas = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.financeiro if i['Tipo'] == 'Entrada')
         saidas = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.financeiro if i['Tipo'] == 'Saída')
