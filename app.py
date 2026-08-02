@@ -269,10 +269,11 @@ if not st.session_state.logado:
                     else:
                         st.error("Preencha todos os campos.")
 
+        # Rodapé com destaque para a Optimus Engenharia jr
         st.markdown("""
-            <div style='text-align: center; margin-top: 40px;'>
-                <p style='font-size: 12px; color: #AA809C; letter-spacing: 0.5px;'>
-                    Desenvolvido com excelência por <strong>N.campos Soluções</strong>
+            <div style='text-align: center; margin-top: 45px;'>
+                <p style='font-size: 13px; color: #5A204B; font-weight: 500; letter-spacing: 0.5px; margin: 0;'>
+                    Desenvolvido por <strong style='color: #C2185B; font-weight: 700;'>Optimus Engenharia jr</strong>
                 </p>
             </div>
         """, unsafe_allow_html=True)
