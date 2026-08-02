@@ -5,12 +5,7 @@ import os
 import smtplib
 import random
 from email.mime.text import MIMEText
-
-# ----------------------------------------
-# ENDEREÇO DA LOGO NO GITHUB / REPOSITÓRIO
-# ----------------------------------------
-# Substitua 'logo.png' pelo nome da foto no seu repositório ou pela URL raw do GitHub
-URL_LOGO = "logo.png"
+import base64
 
 # 1. Configuração da Página
 st.set_page_config(
@@ -18,6 +13,21 @@ st.set_page_config(
     page_icon=":material/content_cut:", 
     layout="wide"
 )
+
+# ----------------------------------------
+# FUNÇÃO PARA CARREGAR A LOGO EM BASE64 (PREVINE IMAGEM QUEBRADA)
+# ----------------------------------------
+def obter_logo_base64():
+    # Procura a imagem pelos nomes/extensões mais comuns
+    caminhos_possiveis = ["logo.png", "logo.jpg", "logo.jpeg", "logo.webp", "LOGO.PNG", "LOGO.JPG"]
+    for caminho in caminhos_possiveis:
+        if os.path.exists(caminho):
+            with open(caminho, "rb") as f:
+                ext = caminho.split('.')[-1].lower()
+                mime = "image/jpeg" if ext in ["jpg", "jpeg"] else f"image/{ext}"
+                encoded = base64.b64encode(f.read()).decode('utf-8')
+                return f"data:{mime};base64,{encoded}"
+    return None
 
 # ----------------------------------------
 # DESIGN SYSTEM & CSS PERSONALIZADO (MODERNO & FEMININO)
@@ -234,10 +244,20 @@ if 'email_temp' not in st.session_state:
 if not st.session_state.logado:
     col1, col2, col3 = st.columns([1, 1.8, 1])
     with col2:
-        # Exibição da Logo + Título "Salão Pink Fashion"
-        st.markdown(f"""
-            <div style='text-align: center; margin-top: 15px; margin-bottom: 20px;'>
-                <img src='{URL_LOGO}' style='max-width: 130px; width: 100%; height: auto; margin-bottom: 10px; border-radius: 12px;' onerror="this.style.display='none'">
+        # Tenta obter a imagem da logo codificada
+        logo_b64 = obter_logo_base64()
+        
+        # Exibição da Logo em HTML (se encontrada)
+        if logo_b64:
+            st.markdown(f"""
+                <div style='text-align: center; margin-top: 10px; margin-bottom: 10px;'>
+                    <img src='{logo_b64}' style='max-width: 130px; width: 100%; height: auto; border-radius: 12px;'>
+                </div>
+            """, unsafe_allow_html=True)
+
+        # Título do Salão Pink Fashion
+        st.markdown("""
+            <div style='text-align: center; margin-bottom: 20px;'>
                 <h1 style='font-size: 38px; margin-bottom: 0px;'>Salão Pink Fashion</h1>
                 <p style='color: #88607A; font-size: 17px; font-weight: 400; margin-top: 5px;'>Sistema Integrado de Gestão Beauty</p>
             </div>
