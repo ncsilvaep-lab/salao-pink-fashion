@@ -6,116 +6,110 @@ import smtplib
 import random
 from email.mime.text import MIMEText
 
-# ----------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA
-# ----------------------------------------
+# 1. Configuração da Página
 st.set_page_config(
     page_title="Salão Pink Fashion", 
-    page_icon="💅", 
-    layout="wide",
-    initial_sidebar_state="expanded"
+    page_icon=":material/content_cut:", 
+    layout="wide"
 )
 
 # ----------------------------------------
-# ESTILIZAÇÃO CSS CUSTOMIZADA (MODERNA)
+# DESIGN SYSTEM & CSS PERSONALIZADO (MODERNO & FEMININO)
 # ----------------------------------------
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Poppins:wght@300;400;500;600&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', sans-serif;
+    /* Fundo Geral da Aplicação */
+    .stApp {
+        background-color: #FAF6F8;
+        font-family: 'Poppins', sans-serif;
+        color: #3A132C;
     }
 
-    /* Estilização de Botões */
+    /* Títulos e Tipografia */
+    h1, h2, h3 {
+        font-family: 'Playfair Display', serif !important;
+        color: #4A154B !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.5px;
+    }
+
+    /* Menu Lateral (Sidebar) */
+    section[data-testid="stSidebar"] {
+        background-color: #FFFFFF !important;
+        border-right: 1px solid #F3E2EC !important;
+    }
+
+    /* Cards, Métricas e Containers */
+    div[data-testid="stForm"], 
+    div[data-testid="stMetric"],
+    div[data-testid="stExpander"] {
+        background-color: #FFFFFF !important;
+        border-radius: 16px !important;
+        padding: 22px !important;
+        box-shadow: 0 4px 20px rgba(224, 82, 151, 0.06) !important;
+        border: 1px solid #F5E3EE !important;
+    }
+
+    /* Estilização das Métricas */
+    div[data-testid="stMetricValue"] {
+        color: #E05297 !important;
+        font-family: 'Playfair Display', serif !important;
+        font-weight: 700 !important;
+    }
+
+    /* Botões Modernos e Arredondados */
     .stButton > button {
-        background: linear-gradient(135deg, #e91e63 0%, #ff4081 100%) !important;
-        color: white !important;
+        border-radius: 12px !important;
+        background: linear-gradient(135deg, #E05297 0%, #C2185B 100%) !important;
+        color: #FFFFFF !important;
         border: none !important;
-        border-radius: 10px !important;
-        font-weight: 600 !important;
+        font-weight: 500 !important;
+        font-size: 14px !important;
         padding: 0.55rem 1.2rem !important;
-        transition: all 0.3s ease !important;
-        box-shadow: 0 4px 12px rgba(233, 30, 99, 0.25) !important;
+        box-shadow: 0 4px 14px rgba(224, 82, 151, 0.25) !important;
+        transition: all 0.3s ease-in-out !important;
     }
-    
+
     .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 18px rgba(233, 30, 99, 0.4) !important;
+        box-shadow: 0 6px 20px rgba(224, 82, 151, 0.38) !important;
+        opacity: 0.96;
     }
 
-    /* Cards de Métricas no Financeiro */
-    div[data-testid="stMetric"] {
-        background: rgba(233, 30, 99, 0.03);
-        border: 1px solid rgba(233, 30, 99, 0.15);
-        padding: 18px;
-        border-radius: 14px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
-    }
-    
-    div[data-testid="stMetricLabel"] {
-        font-weight: 600;
-        color: #888888;
+    /* Inputs e Seletores */
+    div[data-baseweb="input"] > div, 
+    div[data-baseweb="select"] > div {
+        border-radius: 10px !important;
+        border-color: #EAD0E1 !important;
     }
 
-    /* Modificação das Abas (Tabs) */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+    /* Abas Navegáveis (Tabs) */
+    button[data-baseweb="tab"] {
+        font-family: 'Poppins', sans-serif !important;
+        font-weight: 500 !important;
+        color: #88607A !important;
     }
 
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        padding: 8px 16px;
-        font-weight: 600;
+    button[aria-selected="true"] {
+        color: #E05297 !important;
+        border-bottom-color: #E05297 !important;
     }
 
-    .stTabs [aria-selected="true"] {
-        background-color: rgba(233, 30, 99, 0.1) !important;
-        color: #e91e63 !important;
+    /* Tabelas e Dataframes */
+    div[data-testid="stDataFrame"] {
+        border-radius: 12px !important;
+        overflow: hidden;
+        border: 1px solid #F0DCE8 !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # ----------------------------------------
-# FUNÇÕES DE ESTILIZAÇÃO DO ESTOQUE
-# ----------------------------------------
-def colorir_estoque_pecas(row):
-    """Aplica cores para Produtos com base na coluna 'Quantidade'"""
-    try:
-        qtd = float(row['Quantidade'])
-    except (ValueError, TypeError):
-        return [''] * len(row)
-    
-    if qtd <= 5:
-        # Vermelho (Estoque baixo)
-        style = 'background-color: #ffcdd2; color: #801010; font-weight: 600;'
-    elif qtd <= 10:
-        # Amarelo (Estoque médio)
-        style = 'background-color: #fff9c4; color: #7a5c00; font-weight: 600;'
-    else:
-        # Verde (Estoque alto)
-        style = 'background-color: #c8e6c9; color: #1b5e20; font-weight: 600;'
-    return [style] * len(row)
-
-def colorir_estoque_materiais(row):
-    """Aplica cores para Materiais com base na coluna 'Metragem'"""
-    try:
-        qtd = float(row['Metragem'])
-    except (ValueError, TypeError):
-        return [''] * len(row)
-    
-    if qtd <= 5:
-        style = 'background-color: #ffcdd2; color: #801010; font-weight: 600;'
-    elif qtd <= 10:
-        style = 'background-color: #fff9c4; color: #7a5c00; font-weight: 600;'
-    else:
-        style = 'background-color: #c8e6c9; color: #1b5e20; font-weight: 600;'
-    return [style] * len(row)
-
-# ----------------------------------------
 # CONFIGURAÇÃO DE E-MAIL (REMETENTE)
 # ----------------------------------------
-EMAIL_REMETENTE = "natanaelcampossilva2006@gmail.com" 
+EMAIL_REMETENTE = "natanaelcampossilva2006@gmail.com"
 SENHA_APP = "bwpagsnxwcsxhlsm"
 
 def enviar_codigo_email(email_destino, codigo):
@@ -130,19 +124,19 @@ def enviar_codigo_email(email_destino, codigo):
         server.send_message(msg)
         server.quit()
         return True
-    except Exception:
+    except Exception as e:
         return False
 
 # ----------------------------------------
 # CONFIGURAÇÃO DE ARQUIVOS LOCAIS
 # ----------------------------------------
-PASTA_DRIVE = "dados_sistema_pink_fashion"
-os.makedirs(PASTA_DRIVE, exist_ok=True) 
+PASTA_DRIVE = "dados_sistema"
+os.makedirs(PASTA_DRIVE, exist_ok=True)
 
 ARQ_ESTOQUE = f"{PASTA_DRIVE}/estoque.csv"
 ARQ_VENDAS = f"{PASTA_DRIVE}/vendas.csv"
 ARQ_FINANCEIRO = f"{PASTA_DRIVE}/financeiro.csv"
-ARQ_USUARIOS = f"{PASTA_DRIVE}/usuarios.csv" 
+ARQ_USUARIOS = f"{PASTA_DRIVE}/usuarios.csv"
 
 def carregar_dados(arquivo):
     if os.path.exists(arquivo):
@@ -156,12 +150,10 @@ def salvar_dados(dados, arquivo):
 def converter_valor(valor):
     try:
         return float(valor)
-    except Exception:
+    except:
         return 0.0
 
-# ----------------------------------------
-# 2. INICIALIZAÇÃO DO ESTADO
-# ----------------------------------------
+# 2. Inicialização do Banco de Dados
 if 'logado' not in st.session_state:
     st.session_state.logado = False
 if 'usuario_logado' not in st.session_state:
@@ -185,34 +177,28 @@ if 'codigo_gerado' not in st.session_state:
 if 'email_temp' not in st.session_state:
     st.session_state.email_temp = ""
 
-# ----------------------------------------
-# 3. TELA DE LOGIN E CADASTRO
-# ----------------------------------------
+# 3. Tela de Login e Cadastro
 if not st.session_state.logado:
-    col1, col2, col3 = st.columns([1, 1.4, 1])
+    col1, col2, col3 = st.columns([1, 1.8, 1])
     with col2:
-        if os.path.exists("logo.jpg"):
-            c1, c2, c3 = st.columns([1, 1.2, 1])
-            with c2:
-                st.image("logo.jpg", use_container_width=True)
-        elif os.path.exists("logo.png"):
-            c1, c2, c3 = st.columns([1, 1.2, 1])
-            with c2:
-                st.image("logo.png", use_container_width=True)
-        else:
-            st.markdown("<h1 style='text-align: center; color: #e91e63;'>💖 Salão Pink Fashion</h1>", unsafe_allow_html=True)
-            
-        st.markdown("<h4 style='text-align: center; color: #888888; font-weight: 400; margin-top: -10px;'>Gestão & Beleza</h4>", unsafe_allow_html=True)
-        st.write("")
-        
-        aba_login, aba_cadastro = st.tabs(["🔐 Entrar", "📝 Cadastrar Novo Usuário"])
+        st.markdown("""
+            <div style='text-align: center; margin-top: 20px; margin-bottom: 25px;'>
+                <h1 style='font-size: 38px; margin-bottom: 0px;'>Salão Pink Fashion</h1>
+                <p style='color: #88607A; font-size: 15px; font-weight: 300; margin-top: 5px;'>Sistema Integrado de Gestão Beauty</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+        aba_login, aba_cadastro = st.tabs([
+            ":material/login: Entrar", 
+            ":material/person_add: Cadastrar Novo Usuário"
+        ])
 
         with aba_login:
-            st.write("Faça login para acessar a plataforma:")
-            usuario = st.text_input("👤 Usuário")
-            senha = st.text_input("🔑 Senha", type="password")
+            st.write("")
+            usuario = st.text_input("Usuário")
+            senha = st.text_input("Senha", type="password")
 
-            if st.button("Entrar no Sistema", type="primary", use_container_width=True):
+            if st.button("Acessar Painel", type="primary", use_container_width=True, icon=":material/login:"):
                 login_sucesso = False
                 for usr in st.session_state.usuarios:
                     if str(usr['usuario']) == usuario and str(usr['senha']) == senha:
@@ -224,14 +210,14 @@ if not st.session_state.logado:
                     st.session_state.usuario_logado = usuario
                     st.rerun()
                 else:
-                    st.error("❌ Usuário ou senha incorretos!")
+                    st.error("Usuário ou senha incorretos.")
 
         with aba_cadastro:
+            st.write("")
             if st.session_state.etapa_cadastro == 1:
-                st.write("Digite seu e-mail para receber o código de validação:")
-                email_input = st.text_input("📧 Seu E-mail")
+                email_input = st.text_input("Seu E-mail Profissional")
                 
-                if st.button("Enviar Código", type="primary", use_container_width=True):
+                if st.button("Enviar Código de Verificação", type="primary", use_container_width=True, icon=":material/send:"):
                     if "@" in email_input and "." in email_input:
                         codigo = str(random.randint(100000, 999999))
                         st.session_state.codigo_gerado = codigo
@@ -240,38 +226,37 @@ if not st.session_state.logado:
                         sucesso_email = enviar_codigo_email(email_input, codigo)
                         
                         if sucesso_email:
-                            st.success(f"Código enviado para {email_input}!")
+                            st.success(f"Código enviado para {email_input}.")
                             st.session_state.etapa_cadastro = 2
                             st.rerun()
                         else:
-                            st.warning(f"Erro no envio do e-mail. Para testes, o código é: {codigo}")
+                            st.warning(f"Erro ao enviar e-mail. Para testes, seu código é: {codigo}")
                             st.session_state.etapa_cadastro = 2 
                     else:
                         st.error("Por favor, digite um e-mail válido.")
 
             elif st.session_state.etapa_cadastro == 2:
-                st.info(f"Um código de 6 dígitos foi enviado para: {st.session_state.email_temp}")
-                codigo_digitado = st.text_input("🔢 Digite o Código", max_chars=6)
+                st.info(f"Código enviado para: **{st.session_state.email_temp}**")
+                codigo_digitado = st.text_input("Digite o Código de 6 Dígitos", max_chars=6)
                 
                 col_voltar, col_avancar = st.columns(2)
-                if col_voltar.button("⬅️ Voltar"):
+                if col_voltar.button("Voltar", icon=":material/arrow_back:"):
                     st.session_state.etapa_cadastro = 1
                     st.rerun()
                     
-                if col_avancar.button("Validar Código", type="primary"):
+                if col_avancar.button("Validar Código", type="primary", icon=":material/check_circle:"):
                     if codigo_digitado == st.session_state.codigo_gerado:
-                        st.success("Código Validado!")
+                        st.success("Código Validado com sucesso!")
                         st.session_state.etapa_cadastro = 3
                         st.rerun()
                     else:
-                        st.error("❌ Código Incorreto!")
+                        st.error("Código incorreto.")
 
             elif st.session_state.etapa_cadastro == 3:
-                st.write("Crie as credenciais da sua nova conta:")
-                novo_usuario = st.text_input("👤 Defina um Nome de Usuário")
-                nova_senha = st.text_input("🔑 Defina uma Senha", type="password")
+                novo_usuario = st.text_input("Defina seu Nome de Usuário")
+                nova_senha = st.text_input("Defina sua Senha", type="password")
                 
-                if st.button("Finalizar Cadastro", type="primary", use_container_width=True):
+                if st.button("Finalizar Cadastro", type="primary", use_container_width=True, icon=":material/save:"):
                     if novo_usuario and nova_senha:
                         st.session_state.usuarios.append({
                             'email': st.session_state.email_temp, 
@@ -279,55 +264,67 @@ if not st.session_state.logado:
                             'senha': nova_senha
                         })
                         salvar_dados(st.session_state.usuarios, ARQ_USUARIOS)
-                        st.success("✅ Cadastro concluído! Faça login na aba 'Entrar'.")
+                        st.success("Cadastro concluído! Acesse a aba 'Entrar'.")
                         st.session_state.etapa_cadastro = 1 
                     else:
-                        st.error("Preencha todos os campos!")
+                        st.error("Preencha todos os campos.")
 
         st.markdown("""
-            <div style='text-align: center; margin-top: 50px;'>
-                <p style='font-family: "Courier New", Courier, monospace; font-size: 13px; color: #888888; letter-spacing: 0.5px;'>
-                    Desenvolvido por <span style='font-weight: bold; color: #ff4b4b;'>Optimus engenharia jr</span>
+            <div style='text-align: center; margin-top: 40px;'>
+                <p style='font-size: 12px; color: #AA809C; letter-spacing: 0.5px;'>
+                    Desenvolvido com excelência por <strong>N.campos Soluções</strong>
                 </p>
             </div>
         """, unsafe_allow_html=True)
 
-# ----------------------------------------
-# 4. SISTEMA PRINCIPAL
-# ----------------------------------------
+# 4. Sistema Principal
 else:
-    st.sidebar.markdown("<h2 style='color: #e91e63;'>💅 Pink Fashion</h2>", unsafe_allow_html=True)
-    menu = ["📦 Estoque & Produtos", "🛍️ Atendimentos & Vendas", "📊 Painel Financeiro"]
-    escolha = st.sidebar.radio("Navegação principal:", menu)
+    st.sidebar.markdown("<h2 style='font-size: 24px; margin-bottom: 5px;'>Pink Fashion</h2>", unsafe_allow_html=True)
+    st.sidebar.markdown("<p style='font-size: 12px; color: #88607A;'>Navegação do Sistema</p>", unsafe_allow_html=True)
+    
+    menu_opcoes = {
+        ":material/inventory_2: Gestão de Estoque": "Estoque",
+        ":material/point_of_sale: Vendas & Pedidos": "Vendas / Pedidos",
+        ":material/payments: Painel Financeiro": "Financeiro"
+    }
+    
+    escolha_formatada = st.sidebar.radio("", list(menu_opcoes.keys()))
+    escolha = menu_opcoes[escolha_formatada]
 
     st.sidebar.divider()
-    st.sidebar.write(f"✨ Usuário conectado: **{st.session_state.usuario_logado.capitalize()}**")
-    if st.sidebar.button("🚪 Sair da Conta", use_container_width=True):
+    st.sidebar.markdown(f"Sessão ativa: <br>**{st.session_state.usuario_logado.capitalize()}**", unsafe_allow_html=True)
+    st.write("")
+    if st.sidebar.button("Encerrar Sessão", use_container_width=True, icon=":material/logout:"):
         st.session_state.logado = False
         st.rerun()
 
     # ----------------------------------------
-    # MÓDULO 1: ESTOQUE E PRODUTOS
+    # MÓDULO 1: ESTOQUE
     # ----------------------------------------
-    if escolha == "📦 Estoque & Produtos":
-        st.header("💅 Gestão de Estoque e Produtos")
-        aba1, aba2 = st.tabs(["➕ Novo Cadastro", "📋 Inventário Atual"])
+    if escolha == "Estoque":
+        st.header("Gestão de Estoque")
+        st.markdown("<p style='color: #77506A; margin-bottom: 20px;'>Controle de produtos e materiais em tempo real</p>", unsafe_allow_html=True)
+        
+        aba1, aba2 = st.tabs([
+            ":material/add_box: Cadastrar Item", 
+            ":material/inventory: Estoque Atual"
+        ])
 
         with aba1:
-            categoria = st.radio("Selecione o tipo de item:", ["Produto Pronto (Venda)", "Insumo / Cosmético (Uso do Salão)"], horizontal=True)
-            st.divider()
+            categoria = st.radio("Selecione a Categoria:", ["Peça Pronta", "Material"], horizontal=True)
+            st.write("")
 
-            if categoria == "Produto Pronto (Venda)":
+            if categoria == "Peça Pronta":
                 with st.form("form_peca", clear_on_submit=True):
                     col1, col2 = st.columns(2)
-                    produto = col1.text_input("Nome do Produto/Cosmético")
-                    tamanho = col2.text_input("Tamanho / Volume (Ex: 250ml, Único, Kit)")
+                    produto = col1.text_input("Nome da Peça / Produto")
+                    tamanho = col2.text_input("Tamanho (Ex: P, M, Único)")
 
                     col3, col4 = st.columns(2)
                     valor = col3.number_input("Valor de Venda (R$)", min_value=0.0, step=0.5, format="%.2f")
                     disponibilidade = col4.number_input("Quantidade em Estoque", min_value=0, step=1)
 
-                    submit_peca = st.form_submit_button("Cadastrar Produto", type="primary")
+                    submit_peca = st.form_submit_button("Cadastrar Produto", type="primary", icon=":material/add:")
 
                     if submit_peca and produto:
                         st.session_state.estoque.append({
@@ -336,20 +333,20 @@ else:
                             'Cor': '-', 'Metragem': '-', 'Foto': '-'
                         })
                         salvar_dados(st.session_state.estoque, ARQ_ESTOQUE)
-                        st.success(f"✅ Produto '{produto}' registrado com sucesso!")
+                        st.success(f"Item '{produto}' registrado com sucesso.")
 
-            elif categoria == "Insumo / Cosmético (Uso do Salão)":
+            elif categoria == "Material":
                 with st.form("form_material", clear_on_submit=True):
                     col1, col2 = st.columns(2)
                     produto = col1.text_input("Nome do Material / Insumo")
-                    cor = col2.text_input("Cor / Tonalidade (Se houver)")
+                    cor = col2.text_input("Cor")
 
                     col3, col4, col5 = st.columns(3)
-                    metragem = col3.number_input("Qtd / Unidades", min_value=0.0, step=0.1)
-                    valor_material = col4.number_input("Custo Total de Compra (R$)", min_value=0.0, step=0.5, format="%.2f")
-                    foto = col5.file_uploader("Foto do Produto", type=["png", "jpg", "jpeg"])
+                    metragem = col3.number_input("Metragem/Qtd", min_value=0.0, step=0.1)
+                    valor_material = col4.number_input("Custo Total (R$)", min_value=0.0, step=0.5, format="%.2f")
+                    foto = col5.file_uploader("Foto do Material", type=["png", "jpg", "jpeg"])
 
-                    submit_material = st.form_submit_button("Cadastrar Insumo", type="primary")
+                    submit_material = st.form_submit_button("Cadastrar Material", type="primary", icon=":material/add:")
 
                     if submit_material and produto:
                         nome_foto = foto.name if foto is not None else "Sem foto"
@@ -359,79 +356,72 @@ else:
                             'Cor': cor, 'Metragem': metragem, 'Foto': nome_foto
                         })
                         salvar_dados(st.session_state.estoque, ARQ_ESTOQUE)
-                        st.success(f"✅ Insumo '{produto}' salvo!")
+                        st.success(f"Material '{produto}' registrado com sucesso.")
 
         with aba2:
             if st.session_state.estoque:
-                # Legenda das Cores
-                st.markdown("""
-                <div style="background-color: rgba(0,0,0,0.02); padding: 10px 15px; border-radius: 8px; border: 1px solid #eeeeee; margin-bottom: 20px;">
-                    <strong>🎨 Legenda de Alerta de Estoque:</strong>&nbsp;&nbsp;&nbsp;&nbsp;
-                    <span style="background-color: #ffcdd2; color: #801010; padding: 3px 10px; border-radius: 5px; font-weight: bold;">🔴 1 a 5 un (Baixo)</span>&nbsp;&nbsp;
-                    <span style="background-color: #fff9c4; color: #7a5c00; padding: 3px 10px; border-radius: 5px; font-weight: bold;">🟡 5 a 10 un (Médio)</span>&nbsp;&nbsp;
-                    <span style="background-color: #c8e6c9; color: #1b5e20; padding: 3px 10px; border-radius: 5px; font-weight: bold;">🟢 Mais de 10 un (Alto)</span>
-                </div>
-                """, unsafe_allow_html=True)
-
                 df_estoque = pd.DataFrame(st.session_state.estoque)
                 
-                st.subheader("🛍️ Produtos para Venda")
+                st.subheader("Produtos Prontos")
                 df_pecas = df_estoque[df_estoque['Categoria'] == 'Peça Pronta']
                 if not df_pecas.empty:
-                    df_pecas_styled = df_pecas.style.apply(colorir_estoque_pecas, axis=1)
-                    st.dataframe(df_pecas_styled, use_container_width=True)
+                    st.dataframe(df_pecas, use_container_width=True)
                 else:
-                    st.info("Nenhum produto cadastrado para venda.")
+                    st.info("Nenhum produto cadastrado.")
                 
                 st.divider()
 
-                st.subheader("💄 Insumos e Materiais de Uso")
+                st.subheader("Materiais & Insumos")
                 df_materiais = df_estoque[df_estoque['Categoria'] == 'Material']
                 if not df_materiais.empty:
-                    df_materiais_styled = df_materiais.style.apply(colorir_estoque_materiais, axis=1)
-                    st.dataframe(df_materiais_styled, use_container_width=True)
+                    st.dataframe(df_materiais, use_container_width=True)
                 else:
-                    st.info("Nenhum insumo cadastrado no estoque.")
+                    st.info("Nenhum material cadastrado.")
             else:
-                st.info("O estoque está vazio no momento.")
+                st.info("Seu estoque está vazio.")
 
     # ----------------------------------------
-    # MÓDULO 2: ATENDIMENTOS E VENDAS
+    # MÓDULO 2: VENDAS E PEDIDOS
     # ----------------------------------------
-    elif escolha == "🛍️ Atendimentos & Vendas":
-        st.header("🛍️ Atendimentos, Agendamentos e Vendas")
-        aba1, aba2 = st.tabs(["🛒 Novo Registro", "🧾 Histórico de Movimentações"])
+    elif escolha == "Vendas / Pedidos":
+        st.header("Vendas & Agendamentos")
+        st.markdown("<p style='color: #77506A; margin-bottom: 20px;'>Registro de serviços prestados e vendas de balcão</p>", unsafe_allow_html=True)
+
+        aba1, aba2 = st.tabs([
+            ":material/add_shopping_cart: Novo Registro", 
+            ":material/history: Histórico"
+        ])
 
         with aba1:
-            tipo_registro = st.radio("Selecione o tipo de operação:", ["Venda de Produto (Pronta Entrega)", "Agendamento / Serviço Personalizado"], horizontal=True)
-            st.divider()
+            tipo_registro = st.radio("Tipo de Operação:", ["Venda de Estoque (Pronta Entrega)", "Novo Pedido (Agendamento / Serviço)"], horizontal=True)
+            st.write("")
 
-            if tipo_registro == "Venda de Produto (Pronta Entrega)":
+            if tipo_registro == "Venda de Estoque (Pronta Entrega)":
                 pecas_disponiveis = [item for item in st.session_state.estoque if item['Categoria'] == 'Peça Pronta' and str(item['Quantidade']).isdigit() and int(item['Quantidade']) > 0]
                 
                 if not pecas_disponiveis:
-                    st.warning("⚠️ Não há produtos com estoque disponível no momento.")
+                    st.warning("Não há produtos com estoque disponível no momento.")
                 else:
                     with st.form("form_venda_estoque", clear_on_submit=True):
                         col_a, col_b = st.columns(2)
-                        nome_cliente = col_a.text_input("Nome da Cliente")
-                        data_venda = col_b.date_input("Data do Atendimento/Venda", format="DD/MM/YYYY")
+                        nome_cliente = col_a.text_input("Nome do Cliente")
+                        data_venda = col_b.date_input("Data da Venda")
                         
-                        opcoes_select = {f"{p['Produto']} ({p['Tamanho']}) - R$ {p['Valor (R$)']} | Qtd: {p['Quantidade']} un": p for p in pecas_disponiveis}
+                        opcoes_select = {f"{p['Produto']} (Tam: {p['Tamanho']}) - R$ {p['Valor (R$)']} | Disp: {p['Quantidade']} un": p for p in pecas_disponiveis}
                         
                         peca_selecionada = st.selectbox("Selecione o Produto", list(opcoes_select.keys()))
                         
                         col_c, col_d = st.columns(2)
                         qtd_vendida = col_c.number_input("Quantidade", min_value=1, step=1)
-                        desconto = col_d.number_input("Desconto (R$)", min_value=0.0, step=0.5, format="%.2f")
+                        desconto = col_d.number_input("Desconto Aplicado (R$)", min_value=0.0, step=0.5, format="%.2f")
 
-                        submit_venda = st.form_submit_button("Concluir Venda", type="primary")
+                        submit_venda = st.form_submit_button("Finalizar Venda", type="primary", icon=":material/shopping_cart_checkout:")
 
                         if submit_venda and nome_cliente:
                             peca_ref = opcoes_select[peca_selecionada]
                             
                             if qtd_vendida > int(peca_ref['Quantidade']):
-                                st.error(f"❌ Estoque insuficiente! Apenas {peca_ref['Quantidade']} unidade(s) disponível(is).")
+                                st.error(f"Estoque insuficiente! Disponível apenas {peca_ref['Quantidade']} unidades.")
                             else:
                                 valor_total = (float(peca_ref['Valor (R$)']) * qtd_vendida) - desconto
                                 data_str = data_venda.strftime("%d/%m/%Y")
@@ -451,27 +441,26 @@ else:
 
                                 st.session_state.financeiro.append({
                                     'Data': data_str, 'Tipo': 'Entrada',
-                                    'Descrição': f"Venda Produto: {peca_ref['Produto']} ({nome_cliente})", 'Valor (R$)': valor_total
+                                    'Descrição': f"Venda Estoque: {peca_ref['Produto']} ({nome_cliente})", 'Valor (R$)': valor_total
                                 })
                                 salvar_dados(st.session_state.financeiro, ARQ_FINANCEIRO)
 
-                                st.success(f"✅ Venda efetuada com sucesso! (R$ {valor_total:.2f})")
+                                st.success(f"Venda concluída com sucesso (R$ {valor_total:.2f})!")
                                 st.rerun()
 
-            elif tipo_registro == "Agendamento / Serviço Personalizado":
+            elif tipo_registro == "Novo Pedido (Agendamento / Serviço)":
                 with st.form("form_pedidos", clear_on_submit=True):
                     col_a, col_b = st.columns(2)
-                    nome_cliente = col_a.text_input("Nome da Cliente")
-                    data_entrega = col_b.date_input("Data Agendada para o Serviço", format="DD/MM/YYYY")
+                    nome_cliente = col_a.text_input("Nome do Cliente")
+                    data_entrega = col_b.date_input("Data do Agendamento / Serviço")
 
-                    st.divider()
-                    produto_vendido = st.text_input("Serviço Solicitado (Ex: Cabelo, Unhas, Maquiagem)")
+                    produto_vendido = st.text_input("Serviço Solicitado (ex: Escova, Coloração, Pacote)")
 
                     col_c, col_d = st.columns(2)
-                    qtd_vendida = col_c.number_input("Quantidade de Procedimentos", min_value=1, step=1)
+                    qtd_vendida = col_c.number_input("Quantidade de Sessões/Itens", min_value=1, step=1)
                     valor_total = col_d.number_input("Valor Combinado (R$)", min_value=0.0, step=0.5, format="%.2f")
 
-                    submit_pedido = st.form_submit_button("Agendar / Confirmar Serviço", type="primary")
+                    submit_pedido = st.form_submit_button("Confirmar Agendamento", type="primary", icon=":material/event_available:")
 
                     if submit_pedido and nome_cliente and produto_vendido:
                         data_registro = datetime.now().strftime("%d/%m/%Y")
@@ -485,11 +474,11 @@ else:
 
                         st.session_state.financeiro.append({
                             'Data': data_registro, 'Tipo': 'Entrada',
-                            'Descrição': f"Serviço Agendado: {produto_vendido} ({nome_cliente})", 'Valor (R$)': valor_total
+                            'Descrição': f"Serviço: {produto_vendido} ({nome_cliente})", 'Valor (R$)': valor_total
                         })
                         salvar_dados(st.session_state.financeiro, ARQ_FINANCEIRO)
 
-                        st.success(f"✅ Agendamento do serviço gravado! (R$ {valor_total:.2f})")
+                        st.success(f"Agendamento confirmado (R$ {valor_total:.2f})!")
 
         with aba2:
             if st.session_state.vendas:
@@ -497,29 +486,30 @@ else:
                 if 'Tipo' not in df_vendas.columns:
                     df_vendas['Tipo'] = 'Pedido'
 
-                st.subheader("🛍️ Vendas de Produtos Realizadas")
+                st.subheader("Vendas Concluídas")
                 df_vendas_prontas = df_vendas[df_vendas['Tipo'] == 'Venda'].drop(columns=['Tipo'], errors='ignore')
                 if not df_vendas_prontas.empty:
                     st.dataframe(df_vendas_prontas, use_container_width=True)
                 else:
-                    st.info("Nenhuma venda de produto efetuada até o momento.")
+                    st.info("Nenhuma venda realizada.")
                 
                 st.divider()
 
-                st.subheader("💇‍♀️ Serviços e Agendamentos Registrados")
+                st.subheader("Agendamentos & Serviços Solicitados")
                 df_pedidos_encomendas = df_vendas[df_vendas['Tipo'] == 'Pedido'].drop(columns=['Tipo'], errors='ignore')
                 if not df_pedidos_encomendas.empty:
                     st.dataframe(df_pedidos_encomendas, use_container_width=True)
                 else:
-                    st.info("Nenhum serviço agendado até o momento.")
+                    st.info("Nenhum agendamento pendente.")
             else:
-                st.info("Nenhum histórico de registros encontrado.")
+                st.info("Nenhuma movimentação registrada.")
 
     # ----------------------------------------
     # MÓDULO 3: FINANCEIRO
     # ----------------------------------------
-    elif escolha == "📊 Painel Financeiro":
-        st.header("📊 Gestão Financeira e Métricas")
+    elif escolha == "Financeiro":
+        st.header("Painel Financeiro")
+        st.markdown("<p style='color: #77506A; margin-bottom: 20px;'>Visão geral das métricas e saúde financeira do salão</p>", unsafe_allow_html=True)
 
         receitas = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.financeiro if i['Tipo'] == 'Entrada')
         saidas = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.financeiro if i['Tipo'] == 'Saída')
@@ -529,28 +519,31 @@ else:
         valor_estoque = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.estoque if i['Categoria'] == 'Material')
 
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Faturamento (Receitas)", f"R$ {receitas:.2f}")
-        col2.metric("Despesas Variáveis", f"R$ {saidas:.2f}")
+        col1.metric("Receitas Totais", f"R$ {receitas:.2f}")
+        col2.metric("Insumos & Saídas", f"R$ {saidas:.2f}")
         col3.metric("Custos Fixos", f"R$ {custos_fixos:.2f}")
-        col4.metric("Lucro Líquido", f"R$ {saldo_livre:.2f}", delta=f"R$ {saldo_livre:.2f}", delta_color="normal")
+        col4.metric("Saldo Líquido", f"R$ {saldo_livre:.2f}")
         
         st.write("")
-        st.info(f"💎 **Patrimônio em Materiais e Cosméticos:** R$ {valor_estoque:.2f}")
+        st.info(f"Capital imobilizado em estoque (Insumos): **R$ {valor_estoque:.2f}**")
 
         st.divider()
-        aba1, aba2 = st.tabs(["💸 Nova Movimentação", "📈 Extrato Detalhado"])
+        aba1, aba2 = st.tabs([
+            ":material/add_card: Lançamento Financeiro", 
+            ":material/receipt_long: Extrato Detalhado"
+        ])
 
         with aba1:
             with st.form("form_financeiro", clear_on_submit=True):
                 tipo_movimento = st.radio(
                     "Tipo de Lançamento:", 
-                    ["Saída (Variável - ex: compra de produtos, descartáveis)", "Custo Fixo (ex: aluguel, energia, taxa de sistemas)", "Entrada Extra"], 
+                    ["Saída (Produtos / Insumos)", "Custo Fixo (Aluguel, Luz, Internet)", "Entrada Extra"], 
                     horizontal=True
                 )
                 
                 desc_despesa = st.text_input("Descrição do Lançamento")
                 valor_despesa = st.number_input("Valor (R$)", min_value=0.01, step=0.5, format="%.2f")
-                submit_financeiro = st.form_submit_button("Registrar Movimentação", type="primary")
+                submit_financeiro = st.form_submit_button("Salvar Registro", type="primary", icon=":material/check:")
 
                 if submit_financeiro and desc_despesa:
                     tipo_final = "Saída"
@@ -564,15 +557,14 @@ else:
                         'Tipo': tipo_final, 'Descrição': desc_despesa, 'Valor (R$)': valor_despesa
                     })
                     salvar_dados(st.session_state.financeiro, ARQ_FINANCEIRO)
-                    st.success(f"✅ Lançamento '{tipo_final}' gravado com sucesso!")
+                    st.success("Movimentação registrada com sucesso!")
                     st.rerun()
 
         with aba2:
             if st.session_state.financeiro:
                 df_financeiro = pd.DataFrame(st.session_state.financeiro)
                 
-                st.subheader("Relatório Geral de Caixas")
-                filtro = st.selectbox("Filtrar lançamentos:", ["Todos", "Entrada", "Saída", "Custo Fixo"])
+                filtro = st.selectbox("Filtrar Registros:", ["Todos", "Entrada", "Saída", "Custo Fixo"])
                 
                 if filtro != "Todos":
                     df_exibir = df_financeiro[df_financeiro['Tipo'] == filtro]
@@ -582,6 +574,6 @@ else:
                 if not df_exibir.empty:
                     st.dataframe(df_exibir, use_container_width=True)
                 else:
-                    st.info(f"Nenhum lançamento do tipo '{filtro}' encontrado.")
+                    st.info(f"Nenhum registro encontrado para '{filtro}'.")
             else:
-                st.info("Nenhuma movimentação lançada no sistema.")
+                st.info("Sem movimentações no momento.")
