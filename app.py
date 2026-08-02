@@ -18,7 +18,6 @@ st.set_page_config(
 # FUNÇÃO PARA CARREGAR A LOGO EM BASE64 (PREVINE IMAGEM QUEBRADA)
 # ----------------------------------------
 def obter_logo_base64():
-    # Procura a imagem pelos nomes/extensões mais comuns
     caminhos_possiveis = ["logo.png", "logo.jpg", "logo.jpeg", "logo.webp", "LOGO.PNG", "LOGO.JPG"]
     for caminho in caminhos_possiveis:
         if os.path.exists(caminho):
@@ -197,7 +196,7 @@ PASTA_DRIVE = "dados_sistema"
 os.makedirs(PASTA_DRIVE, exist_ok=True)
 
 ARQ_ESTOQUE = f"{PASTA_DRIVE}/estoque.csv"
-ARQ_VENDAS = f"{PASTA_DRIVE}/vendas.csv"
+ARQ_ATENDIMENTOS = f"{PASTA_DRIVE}/atendimentos.csv"
 ARQ_FINANCEIRO = f"{PASTA_DRIVE}/financeiro.csv"
 ARQ_USUARIOS = f"{PASTA_DRIVE}/usuarios.csv"
 
@@ -223,8 +222,8 @@ if 'usuario_logado' not in st.session_state:
     st.session_state.usuario_logado = ""
 if 'estoque' not in st.session_state:
     st.session_state.estoque = carregar_dados(ARQ_ESTOQUE)
-if 'vendas' not in st.session_state:
-    st.session_state.vendas = carregar_dados(ARQ_VENDAS)
+if 'atendimentos' not in st.session_state:
+    st.session_state.atendimentos = carregar_dados(ARQ_ATENDIMENTOS)
 if 'financeiro' not in st.session_state:
     st.session_state.financeiro = carregar_dados(ARQ_FINANCEIRO)
 if 'usuarios' not in st.session_state:
@@ -244,10 +243,8 @@ if 'email_temp' not in st.session_state:
 if not st.session_state.logado:
     col1, col2, col3 = st.columns([1, 1.8, 1])
     with col2:
-        # Tenta obter a imagem da logo codificada
         logo_b64 = obter_logo_base64()
         
-        # Exibição da Logo em HTML (se encontrada)
         if logo_b64:
             st.markdown(f"""
                 <div style='text-align: center; margin-top: 10px; margin-bottom: 10px;'>
@@ -255,7 +252,6 @@ if not st.session_state.logado:
                 </div>
             """, unsafe_allow_html=True)
 
-        # Título do Salão Pink Fashion
         st.markdown("""
             <div style='text-align: center; margin-bottom: 20px;'>
                 <h1 style='font-size: 38px; margin-bottom: 0px;'>Salão Pink Fashion</h1>
@@ -344,7 +340,6 @@ if not st.session_state.logado:
                     else:
                         st.error("Preencha todos os campos.")
 
-        # Rodapé com destaque para a Optimus Engenharia jr
         st.markdown("""
             <div style='text-align: center; margin-top: 45px;'>
                 <p style='font-size: 14px; color: #5A204B; font-weight: 500; letter-spacing: 0.5px; margin: 0;'>
@@ -355,13 +350,13 @@ if not st.session_state.logado:
 
 # 4. Sistema Principal
 else:
-    # Cabeçalho da Sidebar (Fontes Aumentadas)
+    # Sidebar
     st.sidebar.markdown("<h2 style='font-size: 28px; margin-bottom: 5px;'>Pink Fashion</h2>", unsafe_allow_html=True)
     st.sidebar.markdown("<p style='font-size: 16px; color: #88607A; margin-bottom: 20px;'>Navegação do Sistema</p>", unsafe_allow_html=True)
     
     menu_opcoes = {
-        ":material/inventory_2: Gestão de Estoque": "Estoque",
-        ":material/point_of_sale: Vendas & Pedidos": "Vendas / Pedidos",
+        ":material/inventory_2: Produtos & Estoque": "Estoque",
+        ":material/calendar_month: Atendimentos & Serviços": "Atendimentos",
         ":material/payments: Painel Financeiro": "Financeiro"
     }
     
@@ -376,249 +371,204 @@ else:
         st.rerun()
 
     # ----------------------------------------
-    # MÓDULO 1: ESTOQUE
+    # MÓDULO 1: ESTOQUE DE PRODUTOS DO SALÃO
     # ----------------------------------------
     if escolha == "Estoque":
-        st.header("Gestão de Estoque")
-        st.markdown("<p class='subtitulo-pagina'>Controle de produtos e materiais em tempo real</p>", unsafe_allow_html=True)
+        st.header("Gestão de Produtos & Estoque")
+        st.markdown("<p class='subtitulo-pagina'>Controle de cosméticos, insumos e produtos para revenda</p>", unsafe_allow_html=True)
         
         aba1, aba2 = st.tabs([
-            ":material/add_box: Cadastrar Item", 
+            ":material/add_box: Cadastrar Produto", 
             ":material/inventory: Estoque Atual"
         ])
 
         with aba1:
-            categoria = st.radio("Selecione a Categoria:", ["Peça Pronta", "Material"], horizontal=True)
-            st.write("")
+            with st.form("form_produto", clear_on_submit=True):
+                col1, col2 = st.columns(2)
+                nome_produto = col1.text_input("Nome do Produto (Ex: Shampoo L'Oréal, Esmalte Risqué)")
+                categoria = col2.selectbox("Finalidade / Categoria", ["Uso no Salão (Insumo)", "Revenda ao Cliente"])
 
-            if categoria == "Peça Pronta":
-                with st.form("form_peca", clear_on_submit=True):
-                    col1, col2 = st.columns(2)
-                    produto = col1.text_input("Nome da Peça / Produto")
-                    tamanho = col2.text_input("Tamanho (Ex: P, M, Único)")
+                col3, col4, col5 = st.columns(3)
+                qtd = col3.number_input("Quantidade em Estoque", min_value=0, step=1)
+                custo = col4.number_input("Custo Unitário (R$)", min_value=0.0, step=0.5, format="%.2f")
+                preco_venda = col5.number_input("Preço de Venda (R$ - opcional p/ uso interno)", min_value=0.0, step=0.5, format="%.2f")
 
-                    col3, col4 = st.columns(2)
-                    valor = col3.number_input("Valor de Venda (R$)", min_value=0.0, step=0.5, format="%.2f")
-                    disponibilidade = col4.number_input("Quantidade em Estoque", min_value=0, step=1)
+                submit_produto = st.form_submit_button("Cadastrar Produto", type="primary", icon=":material/add:")
 
-                    submit_peca = st.form_submit_button("Cadastrar Produto", type="primary", icon=":material/add:")
-
-                    if submit_peca and produto:
-                        st.session_state.estoque.append({
-                            'Categoria': 'Peça Pronta', 'Produto': produto,
-                            'Tamanho': tamanho, 'Valor (R$)': valor, 'Quantidade': disponibilidade,
-                            'Cor': '-', 'Metragem': '-', 'Foto': '-'
-                        })
-                        salvar_dados(st.session_state.estoque, ARQ_ESTOQUE)
-                        st.success(f"Item '{produto}' registrado com sucesso.")
-
-            elif categoria == "Material":
-                with st.form("form_material", clear_on_submit=True):
-                    col1, col2 = st.columns(2)
-                    produto = col1.text_input("Nome do Material / Insumo")
-                    cor = col2.text_input("Cor")
-
-                    col3, col4, col5 = st.columns(3)
-                    metragem = col3.number_input("Metragem/Qtd", min_value=0.0, step=0.1)
-                    valor_material = col4.number_input("Custo Total (R$)", min_value=0.0, step=0.5, format="%.2f")
-                    foto = col5.file_uploader("Foto do Material", type=["png", "jpg", "jpeg"])
-
-                    submit_material = st.form_submit_button("Cadastrar Material", type="primary", icon=":material/add:")
-
-                    if submit_material and produto:
-                        nome_foto = foto.name if foto is not None else "Sem foto"
-                        st.session_state.estoque.append({
-                            'Categoria': 'Material', 'Produto': produto,
-                            'Tamanho': '-', 'Valor (R$)': valor_material, 'Quantidade': '-',
-                            'Cor': cor, 'Metragem': metragem, 'Foto': nome_foto
-                        })
-                        salvar_dados(st.session_state.estoque, ARQ_ESTOQUE)
-                        st.success(f"Material '{produto}' registrado com sucesso.")
+                if submit_produto and nome_produto:
+                    st.session_state.estoque.append({
+                        'Produto': nome_produto,
+                        'Categoria': categoria,
+                        'Quantidade': qtd,
+                        'Custo (R$)': custo,
+                        'Preço Venda (R$)': preco_venda
+                    })
+                    salvar_dados(st.session_state.estoque, ARQ_ESTOQUE)
+                    st.success(f"Produto '{nome_produto}' cadastrado com sucesso.")
 
         with aba2:
             if st.session_state.estoque:
                 df_estoque = pd.DataFrame(st.session_state.estoque)
                 
-                st.subheader("Produtos Prontos")
-                df_pecas = df_estoque[df_estoque['Categoria'] == 'Peça Pronta']
-                if not df_pecas.empty:
-                    st.dataframe(df_pecas, use_container_width=True)
+                st.subheader("Produtos para Revenda")
+                df_revenda = df_estoque[df_estoque['Categoria'] == 'Revenda ao Cliente']
+                if not df_revenda.empty:
+                    st.dataframe(df_revenda, use_container_width=True)
                 else:
-                    st.info("Nenhum produto cadastrado.")
+                    st.info("Nenhum produto cadastrado para revenda.")
                 
                 st.divider()
 
-                st.subheader("Materiais & Insumos")
-                df_materiais = df_estoque[df_estoque['Categoria'] == 'Material']
-                if not df_materiais.empty:
-                    st.dataframe(df_materiais, use_container_width=True)
+                st.subheader("Insumos & Produtos de Uso do Salão")
+                df_insumos = df_estoque[df_estoque['Categoria'] == 'Uso no Salão (Insumo)']
+                if not df_insumos.empty:
+                    st.dataframe(df_insumos, use_container_width=True)
                 else:
-                    st.info("Nenhum material cadastrado.")
+                    st.info("Nenhum insumo cadastrado.")
             else:
                 st.info("Seu estoque está vazio.")
 
     # ----------------------------------------
-    # MÓDULO 2: VENDAS E PEDIDOS
+    # MÓDULO 2: ATENDIMENTOS E SERVIÇOS
     # ----------------------------------------
-    elif escolha == "Vendas / Pedidos":
-        st.header("Vendas & Agendamentos")
-        st.markdown("<p class='subtitulo-pagina'>Registro de serviços prestados e vendas de balcão</p>", unsafe_allow_html=True)
+    elif escolha == "Atendimentos":
+        st.header("Atendimentos & Serviços")
+        st.markdown("<p class='subtitulo-pagina'>Registro de serviços prestados e vendas de produtos</p>", unsafe_allow_html=True)
 
         aba1, aba2 = st.tabs([
-            ":material/add_shopping_cart: Novo Registro", 
-            ":material/history: Histórico"
+            ":material/add_task: Registrar Atendimento / Venda", 
+            ":material/history: Histórico de Atendimentos"
         ])
 
         with aba1:
-            tipo_registro = st.radio("Tipo de Operação:", ["Venda de Estoque (Pronta Entrega)", "Novo Pedido (Agendamento / Serviço)"], horizontal=True)
+            tipo_op = st.radio("Tipo de Operação:", ["Novo Servico / Agendamento", "Venda de Produto do Balcão"], horizontal=True)
             st.write("")
 
-            if tipo_registro == "Venda de Estoque (Pronta Entrega)":
-                pecas_disponiveis = [item for item in st.session_state.estoque if item['Categoria'] == 'Peça Pronta' and str(item['Quantidade']).isdigit() and int(item['Quantidade']) > 0]
+            if tipo_op == "Novo Servico / Agendamento":
+                with st.form("form_servico", clear_on_submit=True):
+                    col_a, col_b = st.columns(2)
+                    cliente = col_a.text_input("Nome da Cliente")
+                    data_atend = col_b.date_input("Data do Atendimento")
+
+                    col_c, col_d = st.columns(2)
+                    servico = col_c.text_input("Serviço Realizado (Ex: Corte, Escova, Coloração, Manicure)")
+                    profissional = col_d.text_input("Profissional Responsável")
+
+                    valor_servico = st.number_input("Valor do Serviço (R$)", min_value=0.0, step=1.0, format="%.2f")
+
+                    submit_servico = st.form_submit_button("Confirmar Atendimento", type="primary", icon=":material/check_circle:")
+
+                    if submit_servico and cliente and servico:
+                        data_str = data_atend.strftime("%d/%m/%Y")
+                        
+                        st.session_state.atendimentos.append({
+                            'Tipo': 'Serviço', 'Data': data_str, 'Cliente': cliente,
+                            'Descrição': servico, 'Profissional': profissional,
+                            'Total (R$)': valor_servico
+                        })
+                        salvar_dados(st.session_state.atendimentos, ARQ_ATENDIMENTOS)
+
+                        st.session_state.financeiro.append({
+                            'Data': data_str, 'Tipo': 'Entrada',
+                            'Descrição': f"Serviço: {servico} ({cliente})", 'Valor (R$)': valor_servico
+                        })
+                        salvar_dados(st.session_state.financeiro, ARQ_FINANCEIRO)
+
+                        st.success(f"Atendimento registrado com sucesso (R$ {valor_servico:.2f})!")
+
+            elif tipo_op == "Venda de Produto do Balcão":
+                prods_revenda = [item for item in st.session_state.estoque if item['Categoria'] == 'Revenda ao Cliente' and str(item['Quantidade']).isdigit() and int(item['Quantidade']) > 0]
                 
-                if not pecas_disponiveis:
-                    st.warning("Não há produtos com estoque disponível no momento.")
+                if not prods_revenda:
+                    st.warning("Não há produtos cadastrados para revenda com estoque disponível.")
                 else:
-                    with st.form("form_venda_estoque", clear_on_submit=True):
+                    with st.form("form_venda_balcao", clear_on_submit=True):
                         col_a, col_b = st.columns(2)
-                        nome_cliente = col_a.text_input("Nome do Cliente")
+                        cliente = col_a.text_input("Nome da Cliente")
                         data_venda = col_b.date_input("Data da Venda")
                         
-                        opcoes_select = {f"{p['Produto']} (Tam: {p['Tamanho']}) - R$ {p['Valor (R$)']} | Disp: {p['Quantidade']} un": p for p in pecas_disponiveis}
+                        opcoes_select = {f"{p['Produto']} - R$ {p['Preço Venda (R$)']} | Qtd Disp: {p['Quantidade']}": p for p in prods_revenda}
+                        prod_selecionado = st.selectbox("Selecione o Produto", list(opcoes_select.keys()))
                         
-                        peca_selecionada = st.selectbox("Selecione o Produto", list(opcoes_select.keys()))
-                        
-                        col_c, col_d = st.columns(2)
-                        qtd_vendida = col_c.number_input("Quantidade", min_value=1, step=1)
-                        desconto = col_d.number_input("Desconto Aplicado (R$)", min_value=0.0, step=0.5, format="%.2f")
+                        qtd_vendida = st.number_input("Quantidade Vendida", min_value=1, step=1)
+                        submit_venda = st.form_submit_button("Finalizar Venda de Produto", type="primary", icon=":material/shopping_cart:")
 
-                        submit_venda = st.form_submit_button("Finalizar Venda", type="primary", icon=":material/shopping_cart_checkout:")
-
-                        if submit_venda and nome_cliente:
-                            peca_ref = opcoes_select[peca_selecionada]
+                        if submit_venda and cliente:
+                            prod_ref = opcoes_select[prod_selecionado]
                             
-                            if qtd_vendida > int(peca_ref['Quantidade']):
-                                st.error(f"Estoque insuficiente! Disponível apenas {peca_ref['Quantidade']} unidades.")
+                            if qtd_vendida > int(prod_ref['Quantidade']):
+                                st.error(f"Estoque insuficiente! Disponível apenas {prod_ref['Quantidade']} unidades.")
                             else:
-                                valor_total = (float(peca_ref['Valor (R$)']) * qtd_vendida) - desconto
+                                valor_total = float(prod_ref['Preço Venda (R$)']) * qtd_vendida
                                 data_str = data_venda.strftime("%d/%m/%Y")
                                 
                                 for p in st.session_state.estoque:
-                                    if p == peca_ref:
+                                    if p == prod_ref:
                                         p['Quantidade'] = int(p['Quantidade']) - qtd_vendida
                                         break
                                 
-                                st.session_state.vendas.append({
-                                    'Tipo': 'Venda', 'Data': data_str, 'Cliente': nome_cliente,
-                                    'Produto': peca_ref['Produto'], 'Qtd': qtd_vendida,
-                                    'Total (R$)': valor_total, 'Entrega': 'Pronta Entrega'
+                                st.session_state.atendimentos.append({
+                                    'Tipo': 'Venda Produto', 'Data': data_str, 'Cliente': cliente,
+                                    'Descrição': f"{qtd_vendida}x {prod_ref['Produto']}", 'Profissional': '-',
+                                    'Total (R$)': valor_total
                                 })
-                                salvar_dados(st.session_state.vendas, ARQ_VENDAS)
+                                salvar_dados(st.session_state.atendimentos, ARQ_ATENDIMENTOS)
                                 salvar_dados(st.session_state.estoque, ARQ_ESTOQUE)
 
                                 st.session_state.financeiro.append({
                                     'Data': data_str, 'Tipo': 'Entrada',
-                                    'Descrição': f"Venda Estoque: {peca_ref['Produto']} ({nome_cliente})", 'Valor (R$)': valor_total
+                                    'Descrição': f"Venda Produto: {prod_ref['Produto']} ({cliente})", 'Valor (R$)': valor_total
                                 })
                                 salvar_dados(st.session_state.financeiro, ARQ_FINANCEIRO)
 
-                                st.success(f"Venda concluída com sucesso (R$ {valor_total:.2f})!")
+                                st.success(f"Venda registrada com sucesso (R$ {valor_total:.2f})!")
                                 st.rerun()
 
-            elif tipo_registro == "Novo Pedido (Agendamento / Serviço)":
-                with st.form("form_pedidos", clear_on_submit=True):
-                    col_a, col_b = st.columns(2)
-                    nome_cliente = col_a.text_input("Nome do Cliente")
-                    data_entrega = col_b.date_input("Data do Agendamento / Serviço")
-
-                    produto_vendido = st.text_input("Serviço Solicitado (ex: Escova, Coloração, Pacote)")
-
-                    col_c, col_d = st.columns(2)
-                    qtd_vendida = col_c.number_input("Quantidade de Sessões/Itens", min_value=1, step=1)
-                    valor_total = col_d.number_input("Valor Combinado (R$)", min_value=0.0, step=0.5, format="%.2f")
-
-                    submit_pedido = st.form_submit_button("Confirmar Agendamento", type="primary", icon=":material/event_available:")
-
-                    if submit_pedido and nome_cliente and produto_vendido:
-                        data_registro = datetime.now().strftime("%d/%m/%Y")
-
-                        st.session_state.vendas.append({
-                            'Tipo': 'Pedido', 'Data': data_registro, 'Cliente': nome_cliente,
-                            'Produto': produto_vendido, 'Qtd': qtd_vendida,
-                            'Total (R$)': valor_total, 'Entrega': data_entrega.strftime("%d/%m/%Y")
-                        })
-                        salvar_dados(st.session_state.vendas, ARQ_VENDAS)
-
-                        st.session_state.financeiro.append({
-                            'Data': data_registro, 'Tipo': 'Entrada',
-                            'Descrição': f"Serviço: {produto_vendido} ({nome_cliente})", 'Valor (R$)': valor_total
-                        })
-                        salvar_dados(st.session_state.financeiro, ARQ_FINANCEIRO)
-
-                        st.success(f"Agendamento confirmado (R$ {valor_total:.2f})!")
-
         with aba2:
-            if st.session_state.vendas:
-                df_vendas = pd.DataFrame(st.session_state.vendas)
-                if 'Tipo' not in df_vendas.columns:
-                    df_vendas['Tipo'] = 'Pedido'
-
-                st.subheader("Vendas Concluídas")
-                df_vendas_prontas = df_vendas[df_vendas['Tipo'] == 'Venda'].drop(columns=['Tipo'], errors='ignore')
-                if not df_vendas_prontas.empty:
-                    st.dataframe(df_vendas_prontas, use_container_width=True)
-                else:
-                    st.info("Nenhuma venda realizada.")
-                
-                st.divider()
-
-                st.subheader("Agendamentos & Serviços Solicitados")
-                df_pedidos_encomendas = df_vendas[df_vendas['Tipo'] == 'Pedido'].drop(columns=['Tipo'], errors='ignore')
-                if not df_pedidos_encomendas.empty:
-                    st.dataframe(df_pedidos_encomendas, use_container_width=True)
-                else:
-                    st.info("Nenhum agendamento pendente.")
+            if st.session_state.atendimentos:
+                df_atend = pd.DataFrame(st.session_state.atendimentos)
+                st.dataframe(df_atend, use_container_width=True)
             else:
-                st.info("Nenhuma movimentação registrada.")
+                st.info("Nenhum atendimento ou venda registrada.")
 
     # ----------------------------------------
     # MÓDULO 3: FINANCEIRO
     # ----------------------------------------
     elif escolha == "Financeiro":
         st.header("Painel Financeiro")
-        st.markdown("<p class='subtitulo-pagina'>Visão geral das métricas e saúde financeira do salão</p>", unsafe_allow_html=True)
+        st.markdown("<p class='subtitulo-pagina'>Visão geral do faturamento e despesas do salão</p>", unsafe_allow_html=True)
 
         receitas = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.financeiro if i['Tipo'] == 'Entrada')
         saidas = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.financeiro if i['Tipo'] == 'Saída')
         custos_fixos = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.financeiro if i.get('Tipo') == 'Custo Fixo')
         
         saldo_livre = receitas - saidas - custos_fixos
-        valor_estoque = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.estoque if i['Categoria'] == 'Material')
+        valor_estoque = sum(converter_valor(i['Custo (R$)']) * converter_valor(i['Quantidade']) for i in st.session_state.estoque)
 
         col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Receitas Totais", f"R$ {receitas:.2f}")
-        col2.metric("Insumos & Saídas", f"R$ {saidas:.2f}")
+        col1.metric("Faturamento Total", f"R$ {receitas:.2f}")
+        col2.metric("Compras / Insumos", f"R$ {saidas:.2f}")
         col3.metric("Custos Fixos", f"R$ {custos_fixos:.2f}")
         col4.metric("Saldo Líquido", f"R$ {saldo_livre:.2f}")
         
         st.write("")
-        st.info(f"Capital imobilizado em estoque (Insumos): **R$ {valor_estoque:.2f}**")
+        st.info(f"Valor total investido em estoque de produtos: **R$ {valor_estoque:.2f}**")
 
         st.divider()
         aba1, aba2 = st.tabs([
-            ":material/add_card: Lançamento Financeiro", 
-            ":material/receipt_long: Extrato Detalhado"
+            ":material/add_card: Registrar Despesa / Entrada Extra", 
+            ":material/receipt_long: Extrato Financeiro"
         ])
 
         with aba1:
             with st.form("form_financeiro", clear_on_submit=True):
                 tipo_movimento = st.radio(
                     "Tipo de Lançamento:", 
-                    ["Saída (Produtos / Insumos)", "Custo Fixo (Aluguel, Luz, Internet)", "Entrada Extra"], 
+                    ["Saída (Compra de Produtos / Material)", "Custo Fixo (Aluguel, Energia, Água, Internet)", "Entrada Extra"], 
                     horizontal=True
                 )
                 
-                desc_despesa = st.text_input("Descrição do Lançamento")
+                desc_despesa = st.text_input("Descrição da Despesa / Lançamento")
                 valor_despesa = st.number_input("Valor (R$)", min_value=0.01, step=0.5, format="%.2f")
                 submit_financeiro = st.form_submit_button("Salvar Registro", type="primary", icon=":material/check:")
 
@@ -634,7 +584,7 @@ else:
                         'Tipo': tipo_final, 'Descrição': desc_despesa, 'Valor (R$)': valor_despesa
                     })
                     salvar_dados(st.session_state.financeiro, ARQ_FINANCEIRO)
-                    st.success("Movimentação registrada com sucesso!")
+                    st.success("Lançamento financeiro registrado com sucesso!")
                     st.rerun()
 
         with aba2:
@@ -653,4 +603,4 @@ else:
                 else:
                     st.info(f"Nenhum registro encontrado para '{filtro}'.")
             else:
-                st.info("Sem movimentações no momento.")
+                st.info("Sem movimentações registradas.")
