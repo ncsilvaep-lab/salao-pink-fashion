@@ -478,7 +478,7 @@ else:
         st.markdown("<p class='subtitulo-pagina'>Controle de cosméticos, insumos e produtos para revenda</p>", unsafe_allow_html=True)
         
         aba1, aba2 = st.tabs([
-            ":material/add_box: Cadastrar Produto", 
+            ":material/add_box: Cadastrar / Entrada de Produto", 
             ":material/inventory: Estoque Atual"
         ])
 
@@ -489,23 +489,47 @@ else:
                 categoria = col2.selectbox("Finalidade / Categoria", ["Uso no Salão (Insumo)", "Revenda ao Cliente"])
 
                 col3, col4, col5 = st.columns(3)
-                qtd = col3.number_input("Quantidade em Estoque", min_value=0, step=1)
+                qtd = col3.number_input("Quantidade a Adicionar", min_value=1, step=1)
                 
                 custo = col4.number_input("Custo Unitário (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
                 preco_venda = col5.number_input("Preço de Venda (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
 
-                submit_produto = st.form_submit_button("Cadastrar Produto", type="primary", icon=":material/add:")
+                submit_produto = st.form_submit_button("Salvar Registro / Adicionar Estoque", type="primary", icon=":material/add:")
 
                 if submit_produto and nome_produto:
-                    st.session_state.estoque.append({
-                        'Produto': nome_produto,
-                        'Categoria': categoria,
-                        'Quantidade': qtd,
-                        'Custo (R$)': custo,
-                        'Preço Venda (R$)': preco_venda
-                    })
-                    salvar_dados(st.session_state.estoque, ARQ_ESTOQUE)
-                    st.success(f"Produto '{nome_produto}' cadastrado com sucesso.")
+                    # Busca para verificar se o produto já existe (mesmo nome e mesma categoria)
+                    produto_existente = None
+                    for p in st.session_state.estoque:
+                        if str(p['Produto']).strip().lower() == nome_produto.strip().lower() and p['Categoria'] == categoria:
+                            produto_existente = p
+                            break
+
+                    if produto_existente:
+                        # Se já existe, SOMA a quantidade existente
+                        qtd_antiga = int(produto_existente['Quantidade'])
+                        produto_existente['Quantidade'] = qtd_antiga + int(qtd)
+
+                        # Atualiza valores caso tenham sido digitados novos custos ou preços
+                        if custo > 0:
+                            produto_existente['Custo (R$)'] = custo
+                        if preco_venda > 0:
+                            produto_existente['Preço Venda (R$)'] = preco_venda
+
+                        salvar_dados(st.session_state.estoque, ARQ_ESTOQUE)
+                        st.success(f"Estoque do produto **'{produto_existente['Produto']}'** atualizado! Adicionadas {qtd} unidade(s). Novo total: **{produto_existente['Quantidade']} un**.")
+                        st.rerun()
+                    else:
+                        # Se é um produto novo, cria uma nova entrada
+                        st.session_state.estoque.append({
+                            'Produto': nome_produto.strip(),
+                            'Categoria': categoria,
+                            'Quantidade': qtd,
+                            'Custo (R$)': custo,
+                            'Preço Venda (R$)': preco_venda
+                        })
+                        salvar_dados(st.session_state.estoque, ARQ_ESTOQUE)
+                        st.success(f"Novo produto **'{nome_produto.strip()}'** cadastrado com sucesso!")
+                        st.rerun()
 
         with aba2:
             if st.session_state.estoque:
