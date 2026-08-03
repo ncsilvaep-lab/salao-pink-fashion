@@ -154,12 +154,15 @@ st.markdown("""
         border-bottom-color: #E05297 !important;
     }
 
-    /* Tabelas e Dataframes */
+    /* Estilização Avançada das Tabelas */
     div[data-testid="stDataFrame"] {
-        border-radius: 12px !important;
-        overflow: hidden;
+        border-radius: 14px !important;
+        overflow: hidden !important;
         border: 1px solid #F0DCE8 !important;
+        box-shadow: 0 4px 16px rgba(74, 21, 75, 0.04) !important;
+        background-color: #FFFFFF !important;
     }
+
     </style>
 """, unsafe_allow_html=True)
 
@@ -408,7 +411,7 @@ else:
             if str(a.get('Data', '')) == hoje_str
         ]
 
-        # Destague de Faturamento e Métricas Rápida
+        # Métricas do Topo
         col_m1, col_m2, col_m3, col_m4 = st.columns(4)
         col_m1.metric("Faturamento Hoje", f"R$ {receitas_hoje:.2f}")
         col_m2.metric("Faturamento Total", f"R$ {receitas_total:.2f}")
@@ -425,11 +428,16 @@ else:
             if atendimentos_hoje:
                 df_hoje = pd.DataFrame(atendimentos_hoje)
                 colunas_exibir = [c for c in ['Cliente', 'Descrição', 'Profissional', 'Total (R$)'] if c in df_hoje.columns]
+                
                 st.dataframe(
                     df_hoje[colunas_exibir], 
                     use_container_width=True,
+                    hide_index=True,
                     column_config={
-                        "Total (R$)": st.column_config.NumberColumn(format="R$ %.2f")
+                        "Cliente": st.column_config.TextColumn("👤 Cliente"),
+                        "Descrição": st.column_config.TextColumn("✂️ Serviço / Produto"),
+                        "Profissional": st.column_config.TextColumn("💇‍♀️ Profissional"),
+                        "Total (R$)": st.column_config.NumberColumn("💵 Valor Total", format="R$ %.2f")
                     }
                 )
             else:
@@ -445,11 +453,16 @@ else:
                 if not df_baixos.empty:
                     df_baixos['Nível Estoque'] = df_baixos['Qtd_num'].apply(classificar_status_estoque)
                     colunas_exibir_e = [c for c in ['Nível Estoque', 'Produto', 'Quantidade', 'Categoria'] if c in df_baixos.columns]
+                    
                     st.dataframe(
                         df_baixos[colunas_exibir_e], 
                         use_container_width=True,
+                        hide_index=True,
                         column_config={
-                            "Nível Estoque": st.column_config.TextColumn("Status")
+                            "Nível Estoque": st.column_config.TextColumn("Status"),
+                            "Produto": st.column_config.TextColumn("📦 Produto"),
+                            "Quantidade": st.column_config.NumberColumn("Qtd Restante", format="%d un"),
+                            "Categoria": st.column_config.TextColumn("Categoria")
                         }
                     )
                 else:
@@ -513,13 +526,16 @@ else:
                     st.dataframe(
                         df_revenda, 
                         use_container_width=True,
+                        hide_index=True,
                         column_config={
                             "Nível Estoque": st.column_config.TextColumn(
-                                "Nível de Estoque", 
+                                "Status", 
                                 help="🔴 Crítico (≤ 2 unid) | 🟡 Baixo (3 a 5 unid) | 🟢 Normal (> 5 unid)"
                             ),
-                            "Custo (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
-                            "Preço Venda (R$)": st.column_config.NumberColumn(format="R$ %.2f")
+                            "Produto": st.column_config.TextColumn("📦 Produto"),
+                            "Quantidade": st.column_config.NumberColumn("Qtd. Estoque", format="%d un"),
+                            "Custo (R$)": st.column_config.NumberColumn("Custo Un.", format="R$ %.2f"),
+                            "Preço Venda (R$)": st.column_config.NumberColumn("Preço Venda", format="R$ %.2f")
                         }
                     )
                 else:
@@ -534,12 +550,15 @@ else:
                     st.dataframe(
                         df_insumos, 
                         use_container_width=True,
+                        hide_index=True,
                         column_config={
                             "Nível Estoque": st.column_config.TextColumn(
-                                "Nível de Estoque", 
+                                "Status", 
                                 help="🔴 Crítico (≤ 2 unid) | 🟡 Baixo (3 a 5 unid) | 🟢 Normal (> 5 unid)"
                             ),
-                            "Custo (R$)": st.column_config.NumberColumn(format="R$ %.2f")
+                            "Produto": st.column_config.TextColumn("🧼 Insumo / Material"),
+                            "Quantidade": st.column_config.NumberColumn("Qtd. Estoque", format="%d un"),
+                            "Custo (R$)": st.column_config.NumberColumn("Custo Un.", format="R$ %.2f")
                         }
                     )
                 else:
@@ -646,7 +665,19 @@ else:
         with aba2:
             if st.session_state.atendimentos:
                 df_atend = pd.DataFrame(st.session_state.atendimentos)
-                st.dataframe(df_atend, use_container_width=True)
+                st.dataframe(
+                    df_atend, 
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Tipo": st.column_config.TextColumn("Tipo"),
+                        "Data": st.column_config.TextColumn("📅 Data"),
+                        "Cliente": st.column_config.TextColumn("👤 Cliente"),
+                        "Descrição": st.column_config.TextColumn("📝 Descrição / Item"),
+                        "Profissional": st.column_config.TextColumn("💇‍♀️ Profissional"),
+                        "Total (R$)": st.column_config.NumberColumn("💵 Valor Total", format="R$ %.2f")
+                    }
+                )
             else:
                 st.info("Nenhum atendimento ou venda registrada.")
 
@@ -718,7 +749,17 @@ else:
                     df_exibir = df_financeiro
                 
                 if not df_exibir.empty:
-                    st.dataframe(df_exibir, use_container_width=True)
+                    st.dataframe(
+                        df_exibir, 
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "Data": st.column_config.TextColumn("📅 Data/Hora"),
+                            "Tipo": st.column_config.TextColumn("🏷️ Categoria"),
+                            "Descrição": st.column_config.TextColumn("📝 Descrição"),
+                            "Valor (R$)": st.column_config.NumberColumn("💵 Valor", format="R$ %.2f")
+                        }
+                    )
                 else:
                     st.info(f"Nenhum registro encontrado para '{filtro}'.")
             else:
