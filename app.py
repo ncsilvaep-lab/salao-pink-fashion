@@ -15,7 +15,7 @@ st.set_page_config(
 )
 
 # ----------------------------------------
-# FUNÇÃO PARA CARREGAR A LOGO EM BASE64 (PREVINE IMAGEM QUEBRADA)
+# FUNÇÃO PARA CARREGAR A LOGO EM BASE64
 # ----------------------------------------
 def obter_logo_base64():
     caminhos_possiveis = ["logo.png", "logo.jpg", "logo.jpeg", "logo.webp", "LOGO.PNG", "LOGO.JPG"]
@@ -29,7 +29,7 @@ def obter_logo_base64():
     return None
 
 # ----------------------------------------
-# DESIGN SYSTEM & CSS PERSONALIZADO (MODERNO & FEMININO)
+# DESIGN SYSTEM & CSS PERSONALIZADO
 # ----------------------------------------
 st.markdown("""
     <style>
@@ -89,18 +89,13 @@ st.markdown("""
         font-size: 16px !important;
     }
 
-    /* Opções do Radio Button na Sidebar */
-    div[data-testid="stSidebar"] div[role="radiogroup"] label {
-        padding: 6px 0px !important;
-    }
-
     div[data-testid="stSidebar"] div[role="radiogroup"] label p {
         font-size: 18px !important;
         font-weight: 500 !important;
         color: #4A154B !important;
     }
 
-    /* Cards, Métricas e Containers */
+    /* Cards e Containers */
     div[data-testid="stForm"], 
     div[data-testid="stMetric"],
     div[data-testid="stExpander"] {
@@ -186,11 +181,11 @@ def enviar_codigo_email(email_destino, codigo):
         server.send_message(msg)
         server.quit()
         return True
-    except Exception as e:
+    except Exception:
         return False
 
 # ----------------------------------------
-# FUNÇÃO AUXILIAR: CLASSIFICAÇÃO DE ESTOQUE
+# CLASSIFICAÇÃO DE ESTOQUE
 # ----------------------------------------
 def classificar_status_estoque(qtd):
     try:
@@ -386,7 +381,7 @@ else:
         st.rerun()
 
     # ----------------------------------------
-    # MÓDULO 1: ESTOQUE DE PRODUTOS DO SALÃO
+    # MÓDULO 1: ESTOQUE DE PRODUTOS
     # ----------------------------------------
     if escolha == "Estoque":
         st.header("Gestão de Produtos & Estoque")
@@ -406,9 +401,9 @@ else:
                 col3, col4, col5 = st.columns(3)
                 qtd = col3.number_input("Quantidade em Estoque", min_value=0, step=1)
                 
-                # Campos de moeda otimizados com prefixo "R$ " interno
-                custo = col4.number_input("Custo Unitário", min_value=0.0, value=0.0, step=1.0, format="%.2f", prefix="R$ ")
-                preco_venda = col5.number_input("Preço de Venda (opcional p/ insumo)", min_value=0.0, value=0.0, step=1.0, format="%.2f", prefix="R$ ")
+                # Campos numéricos padrão com indicação em R$
+                custo = col4.number_input("Custo Unitário (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
+                preco_venda = col5.number_input("Preço de Venda (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
 
                 submit_produto = st.form_submit_button("Cadastrar Produto", type="primary", icon=":material/add:")
 
@@ -503,8 +498,8 @@ else:
                     servico = col_c.text_input("Serviço Realizado (Ex: Corte, Escova, Coloração, Manicure)")
                     profissional = col_d.text_input("Profissional Responsável")
 
-                    # Valor com prefixo "R$ " embutido na aba
-                    valor_servico = st.number_input("Valor do Serviço", min_value=0.0, value=0.0, step=1.0, format="%.2f", prefix="R$ ")
+                    # Valor numérico em padrão estável
+                    valor_servico = st.number_input("Valor do Serviço (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
 
                     submit_servico = st.form_submit_button("Confirmar Atendimento", type="primary", icon=":material/check_circle:")
 
@@ -621,8 +616,8 @@ else:
                 
                 desc_despesa = st.text_input("Descrição da Despesa / Lançamento")
                 
-                # Valor com prefixo "R$ " embutido
-                valor_despesa = st.number_input("Valor do Lançamento", min_value=0.01, value=0.0, step=1.0, format="%.2f", prefix="R$ ")
+                # Entrada de valor numérica estável
+                valor_despesa = st.number_input("Valor do Lançamento (R$)", min_value=0.01, value=0.0, step=1.0, format="%.2f")
                 submit_financeiro = st.form_submit_button("Salvar Registro", type="primary", icon=":material/check:")
 
                 if submit_financeiro and desc_despesa:
