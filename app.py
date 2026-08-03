@@ -401,7 +401,6 @@ else:
                 col3, col4, col5 = st.columns(3)
                 qtd = col3.number_input("Quantidade em Estoque", min_value=0, step=1)
                 
-                # Campos numéricos padrão com indicação em R$
                 custo = col4.number_input("Custo Unitário (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
                 preco_venda = col5.number_input("Preço de Venda (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
 
@@ -498,7 +497,6 @@ else:
                     servico = col_c.text_input("Serviço Realizado (Ex: Corte, Escova, Coloração, Manicure)")
                     profissional = col_d.text_input("Profissional Responsável")
 
-                    # Valor numérico em padrão estável
                     valor_servico = st.number_input("Valor do Serviço (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
 
                     submit_servico = st.form_submit_button("Confirmar Atendimento", type="primary", icon=":material/check_circle:")
@@ -616,8 +614,8 @@ else:
                 
                 desc_despesa = st.text_input("Descrição da Despesa / Lançamento")
                 
-                # Entrada de valor numérica estável
-                valor_despesa = st.number_input("Valor do Lançamento (R$)", min_value=0.01, value=0.0, step=1.0, format="%.2f")
+                # CORRIGIDO: min_value ajustado para 0.0 para evitar incompatibilidade com value=0.0
+                valor_despesa = st.number_input("Valor do Lançamento (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
                 submit_financeiro = st.form_submit_button("Salvar Registro", type="primary", icon=":material/check:")
 
                 if submit_financeiro and desc_despesa:
