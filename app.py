@@ -405,10 +405,15 @@ else:
             if i['Tipo'] == 'Entrada' and str(i['Data']).startswith(hoje_str)
         )
 
-        # Agendamentos de hoje
-        atendimentos_hoje = [
+        # Filtros de Atendimentos e Vendas de hoje
+        servicos_hoje = [
             a for a in st.session_state.atendimentos 
-            if str(a.get('Data', '')) == hoje_str
+            if str(a.get('Data', '')) == hoje_str and a.get('Tipo', 'Serviço') == 'Serviço'
+        ]
+
+        vendas_hoje = [
+            a for a in st.session_state.atendimentos 
+            if str(a.get('Data', '')) == hoje_str and a.get('Tipo') == 'Venda Produto'
         ]
 
         # Métricas do Topo
@@ -416,35 +421,55 @@ else:
         col_m1.metric("Faturamento Hoje", f"R$ {receitas_hoje:.2f}")
         col_m2.metric("Faturamento Total", f"R$ {receitas_total:.2f}")
         col_m3.metric("Saldo Líquido", f"R$ {saldo_livre:.2f}")
-        col_m4.metric("Atendimentos Hoje", f"{len(atendimentos_hoje)}")
+        col_m4.metric("Atendimentos Hoje", f"{len(servicos_hoje)}")
 
         st.divider()
 
-        # Duas colunas principais: Clientes de Hoje & Alerta de Estoque
-        col_esq, col_dir = st.columns(2)
+        # Abas de Organização do Menu Principal
+        aba_clientes, aba_vendas, aba_alertas = st.tabs([
+            ":material/calendar_month: Clientes Agendados Hoje", 
+            ":material/shopping_bag: Produtos Vendidos Hoje",
+            ":material/warning: Alertas de Estoque"
+        ])
 
-        with col_esq:
-            st.subheader("📅 Clientes Agendados / Atendidos Hoje")
-            if atendimentos_hoje:
-                df_hoje = pd.DataFrame(atendimentos_hoje)
-                colunas_exibir = [c for c in ['Cliente', 'Descrição', 'Profissional', 'Total (R$)'] if c in df_hoje.columns]
+        with aba_clientes:
+            if servicos_hoje:
+                df_serv = pd.DataFrame(servicos_hoje)
+                colunas_exibir = [c for c in ['Cliente', 'Descrição', 'Profissional', 'Total (R$)'] if c in df_serv.columns]
                 
                 st.dataframe(
-                    df_hoje[colunas_exibir], 
+                    df_serv[colunas_exibir], 
                     use_container_width=True,
                     hide_index=True,
                     column_config={
                         "Cliente": st.column_config.TextColumn("👤 Cliente"),
-                        "Descrição": st.column_config.TextColumn("✂️ Serviço / Produto"),
+                        "Descrição": st.column_config.TextColumn("✂️ Serviço Realizado"),
                         "Profissional": st.column_config.TextColumn("💇‍♀️ Profissional"),
                         "Total (R$)": st.column_config.NumberColumn("💵 Valor Total", format="R$ %.2f")
                     }
                 )
             else:
-                st.info("Nenhum atendimento ou agendamento registrado para a data de hoje.")
+                st.info("Nenhum serviço ou atendimento registrado para a data de hoje.")
 
-        with col_dir:
-            st.subheader("⚠️ Alerta de Estoque (Baixo / Crítico)")
+        with aba_vendas:
+            if vendas_hoje:
+                df_vendas = pd.DataFrame(vendas_hoje)
+                colunas_exibir_v = [c for c in ['Cliente', 'Descrição', 'Total (R$)'] if c in df_vendas.columns]
+                
+                st.dataframe(
+                    df_vendas[colunas_exibir_v], 
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Cliente": st.column_config.TextColumn("👤 Cliente / Compradora"),
+                        "Descrição": st.column_config.TextColumn("📦 Produto(s) Vendido(s)"),
+                        "Total (R$)": st.column_config.NumberColumn("💵 Valor Recebido", format="R$ %.2f")
+                    }
+                )
+            else:
+                st.info("Nenhuma venda de produto registrada no balcão para a data de hoje.")
+
+        with aba_alertas:
             if st.session_state.estoque:
                 df_e = pd.DataFrame(st.session_state.estoque)
                 df_e['Qtd_num'] = df_e['Quantidade'].apply(converter_valor)
@@ -497,7 +522,6 @@ else:
                 submit_produto = st.form_submit_button("Salvar Registro / Adicionar Estoque", type="primary", icon=":material/add:")
 
                 if submit_produto and nome_produto:
-                    # Busca para verificar se o produto já existe (mesmo nome e mesma categoria)
                     produto_existente = None
                     for p in st.session_state.estoque:
                         if str(p['Produto']).strip().lower() == nome_produto.strip().lower() and p['Categoria'] == categoria:
@@ -505,11 +529,9 @@ else:
                             break
 
                     if produto_existente:
-                        # Se já existe, SOMA a quantidade existente
                         qtd_antiga = int(produto_existente['Quantidade'])
                         produto_existente['Quantidade'] = qtd_antiga + int(qtd)
 
-                        # Atualiza valores caso tenham sido digitados novos custos ou preços
                         if custo > 0:
                             produto_existente['Custo (R$)'] = custo
                         if preco_venda > 0:
@@ -519,7 +541,6 @@ else:
                         st.success(f"Estoque do produto **'{produto_existente['Produto']}'** atualizado! Adicionadas {qtd} unidade(s). Novo total: **{produto_existente['Quantidade']} un**.")
                         st.rerun()
                     else:
-                        # Se é um produto novo, cria uma nova entrada
                         st.session_state.estoque.append({
                             'Produto': nome_produto.strip(),
                             'Categoria': categoria,
