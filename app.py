@@ -190,6 +190,21 @@ def enviar_codigo_email(email_destino, codigo):
         return False
 
 # ----------------------------------------
+# FUNÇÃO AUXILIAR: CLASSIFICAÇÃO DE ESTOQUE
+# ----------------------------------------
+def classificar_status_estoque(qtd):
+    try:
+        q = int(qtd)
+        if q <= 2:
+            return "🔴 Crítico"
+        elif q <= 5:
+            return "🟡 Baixo"
+        else:
+            return "🟢 Normal"
+    except:
+        return "⚪ Indefinido"
+
+# ----------------------------------------
 # CONFIGURAÇÃO DE ARQUIVOS LOCAIS
 # ----------------------------------------
 PASTA_DRIVE = "dados_sistema"
@@ -410,19 +425,54 @@ else:
             if st.session_state.estoque:
                 df_estoque = pd.DataFrame(st.session_state.estoque)
                 
+                # Adiciona coluna de Status de Nível de Estoque
+                df_estoque['Nível Estoque'] = df_estoque['Quantidade'].apply(classificar_status_estoque)
+                
+                # Reorganiza a ordem das colunas para colocar o Nível em evidência
+                colunas = ['Nível Estoque', 'Produto', 'Quantidade', 'Custo (R$)', 'Preço Venda (R$)', 'Categoria']
+                df_estoque = df_estoque[[c for c in colunas if c in df_estoque.columns]]
+
+                # Verifica se existem produtos com estoque baixo ou crítico
+                itens_baixos = df_estoque[df_estoque['Quantidade'].astype(int) <= 5]
+                if not itens_baixos.empty:
+                    st.warning(f"⚠️ **Atenção:** Há **{len(itens_baixos)}** produto(s) com nível de estoque **Baixo** ou **Crítico**!")
+
                 st.subheader("Produtos para Revenda")
-                df_revenda = df_estoque[df_estoque['Categoria'] == 'Revenda ao Cliente']
+                df_revenda = df_estoque[df_estoque['Categoria'] == 'Revenda ao Cliente'].drop(columns=['Categoria'], errors='ignore')
+                
                 if not df_revenda.empty:
-                    st.dataframe(df_revenda, use_container_width=True)
+                    st.dataframe(
+                        df_revenda, 
+                        use_container_width=True,
+                        column_config={
+                            "Nível Estoque": st.column_config.TextColumn(
+                                "Nível de Estoque", 
+                                help="🔴 Crítico (≤ 2 unid) | 🟡 Baixo (3 a 5 unid) | 🟢 Normal (> 5 unid)"
+                            ),
+                            "Custo (R$)": st.column_config.NumberColumn(format="R$ %.2f"),
+                            "Preço Venda (R$)": st.column_config.NumberColumn(format="R$ %.2f")
+                        }
+                    )
                 else:
                     st.info("Nenhum produto cadastrado para revenda.")
                 
                 st.divider()
 
                 st.subheader("Insumos & Produtos de Uso do Salão")
-                df_insumos = df_estoque[df_estoque['Categoria'] == 'Uso no Salão (Insumo)']
+                df_insumos = df_estoque[df_estoque['Categoria'] == 'Uso no Salão (Insumo)'].drop(columns=['Categoria', 'Preço Venda (R$)'], errors='ignore')
+                
                 if not df_insumos.empty:
-                    st.dataframe(df_insumos, use_container_width=True)
+                    st.dataframe(
+                        df_insumos, 
+                        use_container_width=True,
+                        column_config={
+                            "Nível Estoque": st.column_config.TextColumn(
+                                "Nível de Estoque", 
+                                help="🔴 Crítico (≤ 2 unid) | 🟡 Baixo (3 a 5 unid) | 🟢 Normal (> 5 unid)"
+                            ),
+                            "Custo (R$)": st.column_config.NumberColumn(format="R$ %.2f")
+                        }
+                    )
                 else:
                     st.info("Nenhum insumo cadastrado.")
             else:
