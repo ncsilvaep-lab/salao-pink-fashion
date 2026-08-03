@@ -51,7 +51,7 @@ st.markdown("""
         letter-spacing: -0.5px;
     }
 
-    /* Subtítulos de Seções e Cabeçalhos (AUMENTADOS) */
+    /* Subtítulos de Seções e Cabeçalhos */
     h2 {
         font-family: 'Playfair Display', serif !important;
         color: #4A154B !important;
@@ -67,7 +67,7 @@ st.markdown("""
         font-size: 24px !important;
     }
 
-    /* Subtítulos Descritivos das Páginas (AUMENTADOS) */
+    /* Subtítulos Descritivos das Páginas */
     .subtitulo-pagina {
         color: #77506A !important;
         font-size: 18px !important;
@@ -75,7 +75,7 @@ st.markdown("""
         margin-bottom: 22px !important;
     }
 
-    /* Menu Lateral (Sidebar) - AUMENTO DE FONTE */
+    /* Menu Lateral (Sidebar) */
     section[data-testid="stSidebar"] {
         background-color: #FFFFFF !important;
         border-right: 1px solid #F3E2EC !important;
@@ -89,7 +89,7 @@ st.markdown("""
         font-size: 16px !important;
     }
 
-    /* Opções do Radio Button na Sidebar (AUMENTADO) */
+    /* Opções do Radio Button na Sidebar */
     div[data-testid="stSidebar"] div[role="radiogroup"] label {
         padding: 6px 0px !important;
     }
@@ -405,8 +405,10 @@ else:
 
                 col3, col4, col5 = st.columns(3)
                 qtd = col3.number_input("Quantidade em Estoque", min_value=0, step=1)
-                custo = col4.number_input("Custo Unitário (R$)", min_value=0.0, step=0.5, format="%.2f")
-                preco_venda = col5.number_input("Preço de Venda (R$ - opcional p/ uso interno)", min_value=0.0, step=0.5, format="%.2f")
+                
+                # Campos de moeda otimizados com prefixo "R$ " interno
+                custo = col4.number_input("Custo Unitário", min_value=0.0, value=0.0, step=1.0, format="%.2f", prefix="R$ ")
+                preco_venda = col5.number_input("Preço de Venda (opcional p/ insumo)", min_value=0.0, value=0.0, step=1.0, format="%.2f", prefix="R$ ")
 
                 submit_produto = st.form_submit_button("Cadastrar Produto", type="primary", icon=":material/add:")
 
@@ -425,14 +427,10 @@ else:
             if st.session_state.estoque:
                 df_estoque = pd.DataFrame(st.session_state.estoque)
                 
-                # Adiciona coluna de Status de Nível de Estoque
                 df_estoque['Nível Estoque'] = df_estoque['Quantidade'].apply(classificar_status_estoque)
-                
-                # Reorganiza a ordem das colunas para colocar o Nível em evidência
                 colunas = ['Nível Estoque', 'Produto', 'Quantidade', 'Custo (R$)', 'Preço Venda (R$)', 'Categoria']
                 df_estoque = df_estoque[[c for c in colunas if c in df_estoque.columns]]
 
-                # Verifica se existem produtos com estoque baixo ou crítico
                 itens_baixos = df_estoque[df_estoque['Quantidade'].astype(int) <= 5]
                 if not itens_baixos.empty:
                     st.warning(f"⚠️ **Atenção:** Há **{len(itens_baixos)}** produto(s) com nível de estoque **Baixo** ou **Crítico**!")
@@ -498,13 +496,15 @@ else:
                 with st.form("form_servico", clear_on_submit=True):
                     col_a, col_b = st.columns(2)
                     cliente = col_a.text_input("Nome da Cliente")
-                    data_atend = col_b.date_input("Data do Atendimento")
+                    # Data no padrão brasileiro DD/MM/YYYY
+                    data_atend = col_b.date_input("Data do Atendimento", format="DD/MM/YYYY")
 
                     col_c, col_d = st.columns(2)
                     servico = col_c.text_input("Serviço Realizado (Ex: Corte, Escova, Coloração, Manicure)")
                     profissional = col_d.text_input("Profissional Responsável")
 
-                    valor_servico = st.number_input("Valor do Serviço (R$)", min_value=0.0, step=1.0, format="%.2f")
+                    # Valor com prefixo "R$ " embutido na aba
+                    valor_servico = st.number_input("Valor do Serviço", min_value=0.0, value=0.0, step=1.0, format="%.2f", prefix="R$ ")
 
                     submit_servico = st.form_submit_button("Confirmar Atendimento", type="primary", icon=":material/check_circle:")
 
@@ -535,7 +535,8 @@ else:
                     with st.form("form_venda_balcao", clear_on_submit=True):
                         col_a, col_b = st.columns(2)
                         cliente = col_a.text_input("Nome da Cliente")
-                        data_venda = col_b.date_input("Data da Venda")
+                        # Data no padrão brasileiro DD/MM/YYYY
+                        data_venda = col_b.date_input("Data da Venda", format="DD/MM/YYYY")
                         
                         opcoes_select = {f"{p['Produto']} - R$ {p['Preço Venda (R$)']} | Qtd Disp: {p['Quantidade']}": p for p in prods_revenda}
                         prod_selecionado = st.selectbox("Selecione o Produto", list(opcoes_select.keys()))
@@ -619,7 +620,9 @@ else:
                 )
                 
                 desc_despesa = st.text_input("Descrição da Despesa / Lançamento")
-                valor_despesa = st.number_input("Valor (R$)", min_value=0.01, step=0.5, format="%.2f")
+                
+                # Valor com prefixo "R$ " embutido
+                valor_despesa = st.number_input("Valor do Lançamento", min_value=0.01, value=0.0, step=1.0, format="%.2f", prefix="R$ ")
                 submit_financeiro = st.form_submit_button("Salvar Registro", type="primary", icon=":material/check:")
 
                 if submit_financeiro and desc_despesa:
