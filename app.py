@@ -170,7 +170,7 @@ st.markdown("""
 # CONFIGURAÇÃO DE E-MAIL (REMETENTE)
 # ----------------------------------------
 EMAIL_REMETENTE = "salaopinkfashioncop@gmail.com"
-SENHA_APP = "qeuyilfieuufequ"
+SENHA_APP = "pjvwgizi ggrzglra"
 
 def enviar_codigo_email(email_destino, codigo):
     try:
