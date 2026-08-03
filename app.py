@@ -365,6 +365,7 @@ else:
     st.sidebar.markdown("<p style='font-size: 16px; color: #88607A; margin-bottom: 20px;'>Navegação do Sistema</p>", unsafe_allow_html=True)
     
     menu_opcoes = {
+        ":material/dashboard: Menu Principal": "Dashboard",
         ":material/inventory_2: Produtos & Estoque": "Estoque",
         ":material/calendar_month: Atendimentos & Serviços": "Atendimentos",
         ":material/payments: Painel Financeiro": "Financeiro"
@@ -381,9 +382,85 @@ else:
         st.rerun()
 
     # ----------------------------------------
+    # MÓDULO 0: MENU PRINCIPAL / DASHBOARD
+    # ----------------------------------------
+    if escolha == "Dashboard":
+        hoje_str = datetime.now().strftime("%d/%m/%Y")
+        st.header("Menu Principal")
+        st.markdown(f"<p class='subtitulo-pagina'>Visão geral e resumo do salão em <strong>{hoje_str}</strong></p>", unsafe_allow_html=True)
+
+        # Cálculo de Métricas Financeiras
+        receitas_total = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.financeiro if i['Tipo'] == 'Entrada')
+        saidas_total = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.financeiro if i['Tipo'] == 'Saída')
+        custos_fixos = sum(converter_valor(i['Valor (R$)']) for i in st.session_state.financeiro if i.get('Tipo') == 'Custo Fixo')
+        saldo_livre = receitas_total - saidas_total - custos_fixos
+
+        # Faturamento do dia
+        receitas_hoje = sum(
+            converter_valor(i['Valor (R$)']) 
+            for i in st.session_state.financeiro 
+            if i['Tipo'] == 'Entrada' and str(i['Data']).startswith(hoje_str)
+        )
+
+        # Agendamentos de hoje
+        atendimentos_hoje = [
+            a for a in st.session_state.atendimentos 
+            if str(a.get('Data', '')) == hoje_str
+        ]
+
+        # Destague de Faturamento e Métricas Rápida
+        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+        col_m1.metric("Faturamento Hoje", f"R$ {receitas_hoje:.2f}")
+        col_m2.metric("Faturamento Total", f"R$ {receitas_total:.2f}")
+        col_m3.metric("Saldo Líquido", f"R$ {saldo_livre:.2f}")
+        col_m4.metric("Atendimentos Hoje", f"{len(atendimentos_hoje)}")
+
+        st.divider()
+
+        # Duas colunas principais: Clientes de Hoje & Alerta de Estoque
+        col_esq, col_dir = st.columns(2)
+
+        with col_esq:
+            st.subheader("📅 Clientes Agendados / Atendidos Hoje")
+            if atendimentos_hoje:
+                df_hoje = pd.DataFrame(atendimentos_hoje)
+                colunas_exibir = [c for c in ['Cliente', 'Descrição', 'Profissional', 'Total (R$)'] if c in df_hoje.columns]
+                st.dataframe(
+                    df_hoje[colunas_exibir], 
+                    use_container_width=True,
+                    column_config={
+                        "Total (R$)": st.column_config.NumberColumn(format="R$ %.2f")
+                    }
+                )
+            else:
+                st.info("Nenhum atendimento ou agendamento registrado para a data de hoje.")
+
+        with col_dir:
+            st.subheader("⚠️ Alerta de Estoque (Baixo / Crítico)")
+            if st.session_state.estoque:
+                df_e = pd.DataFrame(st.session_state.estoque)
+                df_e['Qtd_num'] = df_e['Quantidade'].apply(converter_valor)
+                df_baixos = df_e[df_e['Qtd_num'] <= 5].copy()
+
+                if not df_baixos.empty:
+                    df_baixos['Nível Estoque'] = df_baixos['Qtd_num'].apply(classificar_status_estoque)
+                    colunas_exibir_e = [c for c in ['Nível Estoque', 'Produto', 'Quantidade', 'Categoria'] if c in df_baixos.columns]
+                    st.dataframe(
+                        df_baixos[colunas_exibir_e], 
+                        use_container_width=True,
+                        column_config={
+                            "Nível Estoque": st.column_config.TextColumn("Status")
+                        }
+                    )
+                else:
+                    st.success("✅ Todos os produtos estão com estoque em nível normal!")
+            else:
+                st.info("Nenhum produto cadastrado no estoque.")
+
+    # ----------------------------------------
     # MÓDULO 1: ESTOQUE DE PRODUTOS
     # ----------------------------------------
-    if escolha == "Estoque":
+    elif escolha == "Estoque":
         st.header("Gestão de Produtos & Estoque")
         st.markdown("<p class='subtitulo-pagina'>Controle de cosméticos, insumos e produtos para revenda</p>", unsafe_allow_html=True)
         
@@ -490,7 +567,6 @@ else:
                 with st.form("form_servico", clear_on_submit=True):
                     col_a, col_b = st.columns(2)
                     cliente = col_a.text_input("Nome da Cliente")
-                    # Data no padrão brasileiro DD/MM/YYYY
                     data_atend = col_b.date_input("Data do Atendimento", format="DD/MM/YYYY")
 
                     col_c, col_d = st.columns(2)
@@ -528,7 +604,6 @@ else:
                     with st.form("form_venda_balcao", clear_on_submit=True):
                         col_a, col_b = st.columns(2)
                         cliente = col_a.text_input("Nome da Cliente")
-                        # Data no padrão brasileiro DD/MM/YYYY
                         data_venda = col_b.date_input("Data da Venda", format="DD/MM/YYYY")
                         
                         opcoes_select = {f"{p['Produto']} - R$ {p['Preço Venda (R$)']} | Qtd Disp: {p['Quantidade']}": p for p in prods_revenda}
@@ -613,8 +688,6 @@ else:
                 )
                 
                 desc_despesa = st.text_input("Descrição da Despesa / Lançamento")
-                
-                # CORRIGIDO: min_value ajustado para 0.0 para evitar incompatibilidade com value=0.0
                 valor_despesa = st.number_input("Valor do Lançamento (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
                 submit_financeiro = st.form_submit_button("Salvar Registro", type="primary", icon=":material/check:")
 
