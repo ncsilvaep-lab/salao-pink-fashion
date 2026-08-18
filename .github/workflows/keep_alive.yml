@@ -2,13 +2,12 @@ name: Keep Streamlit Alive
 
 on:
   schedule:
-    # Executa a cada hora (minuto 0)
     - cron: '0 * * * *'
-  workflow_dispatch: # Permite rodar manualmente a qualquer momento para testar
+  workflow_dispatch:
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Streamlit App
-        run: curl -s -o /dev/null https://salao-pink-fashion-fuaxsmfhsm84gd52m8zj7p.streamlit.app/
+        run: curl -sL --retry 3 "https://salao-pink-fashion-fuaxsmfhsm84gd52m8zj7p.streamlit.app/" -o /dev/null || true
