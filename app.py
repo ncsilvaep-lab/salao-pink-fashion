@@ -1,13 +1,16 @@
 import base64
 from datetime import datetime
-from email.mime.image import MIMEImage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 import os
-import random
 import pandas as pd
 import streamlit as st
 from supabase import create_client, Client
+
+# ----------------------------------------
+# CREDENCIAIS DE ACESSO ÚNICO
+# (Altere aqui o usuário e senha desejados)
+# ----------------------------------------
+USUARIO_CORRETO = "admin"
+SENHA_CORRETA = "pink123"
 
 # 1. Configuração da Página
 st.set_page_config(
@@ -96,50 +99,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ----------------------------------------
-# CONFIGURAÇÃO DE E-MAIL
-# ----------------------------------------
-EMAIL_REMETENTE = "salaopinkfashioncop@gmail.com"
-SENHA_APP = "pjvwgiziggrzglra"
-
-def enviar_codigo_email(email_destino, codigo):
-    try:
-        msg = MIMEMultipart("related")
-        msg["Subject"] = f"✨ Código de Verificação: {codigo} - Salão Pink Fashion"
-        msg["From"] = EMAIL_REMETENTE
-        msg["To"] = email_destino
-
-        msg_alternative = MIMEMultipart("alternative")
-        msg.attach(msg_alternative)
-
-        text_plain = f"Olá! Seu código de verificação para o sistema Salão Pink Fashion é: {codigo}\n\nSe você não solicitou este código, ignore esta mensagem."
-        msg_alternative.attach(MIMEText(text_plain, "plain", "utf-8"))
-
-        html_content = f"""
-        <!DOCTYPE html>
-        <html lang="pt-BR">
-        <body style="background-color: #FAF6F8; font-family: Arial, sans-serif;">
-            <div style="max-width: 500px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 12px; border: 1px solid #F3E2EC;">
-                <h2 style="color: #4A154B; text-align: center;">Salão Pink Fashion</h2>
-                <p>Seu código de confirmação é:</p>
-                <div style="background: #FDF2F7; padding: 15px; text-align: center; font-size: 28px; font-weight: bold; color: #C2185B; border-radius: 8px;">
-                    {codigo}
-                </div>
-            </div>
-        </body>
-        </html>
-        """
-        msg_alternative.attach(MIMEText(html_content, "html", "utf-8"))
-
-        server = smtplib.SMTP_SSL("smtp.gmail.com", 465)
-        server.login(EMAIL_REMETENTE, SENHA_APP)
-        server.send_message(msg)
-        server.quit()
-        return True
-    except Exception as e:
-        print("Erro ao enviar e-mail:", e)
-        return False
-
 def classificar_status_estoque(qtd):
     try:
         q = int(qtd)
@@ -164,14 +123,7 @@ if "logado" not in st.session_state:
 if "usuario_logado" not in st.session_state:
     st.session_state.usuario_logado = ""
 
-if "etapa_cadastro" not in st.session_state:
-    st.session_state.etapa_cadastro = 1
-if "codigo_gerado" not in st.session_state:
-    st.session_state.codigo_gerado = ""
-if "email_temp" not in st.session_state:
-    st.session_state.email_temp = ""
-
-# 3. Tela de Login e Cadastro
+# 3. Tela de Login Exclusiva
 if not st.session_state.logado:
     col1, col2, col3 = st.columns([1, 1.8, 1])
     with col2:
@@ -192,83 +144,17 @@ if not st.session_state.logado:
             unsafe_allow_html=True,
         )
 
-        aba_login, aba_cadastro = st.tabs([":material/login: Entrar", ":material/person_add: Cadastrar Novo Usuário"])
+        st.write("")
+        usuario_in = st.text_input("Usuário")
+        senha_in = st.text_input("Senha", type="password")
 
-        with aba_login:
-            st.write("")
-            usuario_in = st.text_input("Usuário")
-            senha_in = st.text_input("Senha", type="password")
-
-            if st.button("Acessar Painel", type="primary", use_container_width=True, icon=":material/login:"):
-                usuarios_bd = carregar_dados("usuarios")
-                login_sucesso = False
-                for usr in usuarios_bd:
-                    if str(usr["usuario"]) == usuario_in and str(usr["senha"]) == senha_in:
-                        login_sucesso = True
-                        break
-
-                if login_sucesso:
-                    st.session_state.logado = True
-                    st.session_state.usuario_logado = usuario_in
-                    st.rerun()
-                else:
-                    st.error("Usuário ou senha incorretos.")
-
-        with aba_cadastro:
-            st.write("")
-            if st.session_state.etapa_cadastro == 1:
-                email_input = st.text_input("Seu E-mail Profissional")
-
-                if st.button("Enviar Código de Verificação", type="primary", use_container_width=True, icon=":material/send:"):
-                    if "@" in email_input and "." in email_input:
-                        codigo = str(random.randint(100000, 999999))
-                        st.session_state.codigo_gerado = codigo
-                        st.session_state.email_temp = email_input
-
-                        sucesso_email = enviar_codigo_email(email_input, codigo)
-                        if sucesso_email:
-                            st.success(f"Código enviado para {email_input}.")
-                        else:
-                            st.warning(f"Erro ao enviar e-mail. Para testes, seu código é: {codigo}")
-                        
-                        st.session_state.etapa_cadastro = 2
-                        st.rerun()
-                    else:
-                        st.error("Por favor, digite um e-mail válido.")
-
-            elif st.session_state.etapa_cadastro == 2:
-                st.info(f"Código enviado para: **{st.session_state.email_temp}**")
-                codigo_digitado = st.text_input("Digite o Código de 6 Dígitos", max_chars=6)
-
-                col_v, col_a = st.columns(2)
-                if col_v.button("Voltar", icon=":material/arrow_back:"):
-                    st.session_state.etapa_cadastro = 1
-                    st.rerun()
-
-                if col_a.button("Validar Código", type="primary", icon=":material/check_circle:"):
-                    if codigo_digitado == st.session_state.codigo_gerado:
-                        st.success("Código Validado!")
-                        st.session_state.etapa_cadastro = 3
-                        st.rerun()
-                    else:
-                        st.error("Código incorreto.")
-
-            elif st.session_state.etapa_cadastro == 3:
-                novo_usuario = st.text_input("Defina seu Nome de Usuário")
-                nova_senha = st.text_input("Defina sua Senha", type="password")
-
-                if st.button("Finalizar Cadastro", type="primary", use_container_width=True, icon=":material/save:"):
-                    if novo_usuario and nova_senha:
-                        sucesso = salvar_registro("usuarios", {
-                            "email": st.session_state.email_temp,
-                            "usuario": novo_usuario,
-                            "senha": nova_senha,
-                        })
-                        if sucesso:
-                            st.success("Cadastro concluído! Acesse a aba 'Entrar'.")
-                            st.session_state.etapa_cadastro = 1
-                    else:
-                        st.error("Preencha todos os campos.")
+        if st.button("Acessar Painel", type="primary", use_container_width=True, icon=":material/login:"):
+            if usuario_in == USUARIO_CORRETO and senha_in == SENHA_CORRETA:
+                st.session_state.logado = True
+                st.session_state.usuario_logado = usuario_in
+                st.rerun()
+            else:
+                st.error("Usuário ou senha incorretos.")
 
 # 4. Sistema Principal
 else:
@@ -539,7 +425,6 @@ else:
                                     valor_total = float(prod_ref["preco_venda"]) * qtd_vendida
                                     data_str = data_venda.strftime("%d/%m/%Y")
 
-                                    # Atualiza quantidade no banco
                                     atualizar_quantidade_estoque(prod_ref["id"], int(prod_ref["quantidade"]) - qtd_vendida)
 
                                     salvar_registro("atendimentos", {
