@@ -1,16 +1,102 @@
 import base64
 from datetime import datetime
+import hashlib
+import hmac
+import html
+import logging
 import os
+import re
+import time
 import pandas as pd
 import streamlit as st
 from supabase import create_client, Client
 
 # ----------------------------------------
 # CREDENCIAIS DE ACESSO ÚNICO
-# (Altere aqui o usuário e senha desejados)
+# Defina APP_USER e APP_PASSWORD nos Secrets (arquivo .streamlit/secrets.toml
+# ou Settings > Secrets no Streamlit Community Cloud).
+# Os valores abaixo são só um plano B para o app não ficar fora do ar.
+# Depois de configurar os Secrets, apague as duas linhas abaixo.
 # ----------------------------------------
-USUARIO_CORRETO = "admin"
-SENHA_CORRETA = "pink123"
+_USUARIO_PADRAO = "admin"
+_SENHA_PADRAO = "pink123"
+
+
+SESSAO_MAX_SEGUNDOS = 8 * 3600  # a sessão expira sozinha após 8 horas
+
+_log = logging.getLogger("pink")
+
+
+def _obter_credenciais():
+    """Retorna (usuario, senha_em_texto ou None, hash_da_senha ou None).
+
+    Ordem de preferência: APP_PASSWORD_HASH (recomendado) > APP_PASSWORD >
+    senha padrão antiga (plano B, remover depois de configurar os Secrets).
+    """
+    try:
+        usuario = st.secrets.get("APP_USER", _USUARIO_PADRAO)
+        senha = st.secrets.get("APP_PASSWORD", None)
+        senha_hash = st.secrets.get("APP_PASSWORD_HASH", None)
+    except Exception:
+        usuario, senha, senha_hash = _USUARIO_PADRAO, None, None
+    if not senha and not senha_hash:
+        senha = _SENHA_PADRAO
+    return (
+        str(usuario).strip().lower(),
+        str(senha).strip() if senha else None,
+        str(senha_hash).strip() if senha_hash else None,
+    )
+
+
+def _verificar_hash_senha(senha, senha_hash):
+    """Confere a senha contra 'pbkdf2_sha256$iteracoes$salt_hex$hash_hex'.
+
+    Gere o valor com: python gerar_hash_senha.py
+    """
+    try:
+        algoritmo, iteracoes, salt_hex, hash_hex = senha_hash.split("$")
+        if algoritmo != "pbkdf2_sha256":
+            return False
+        calculado = hashlib.pbkdf2_hmac(
+            "sha256", senha.encode("utf-8"), bytes.fromhex(salt_hex), int(iteracoes)
+        )
+        return hmac.compare_digest(calculado, bytes.fromhex(hash_hex))
+    except Exception:
+        return False
+
+
+def _credenciais_conferem(usuario_in, senha_in):
+    """Compara ignorando maiúsculas no usuário e espaços nas pontas.
+
+    Teclado de celular costuma escrever 'Admin' (primeira letra maiúscula) e
+    o autocompletar deixa espaço no fim; a comparação exata rejeitava os dois.
+    compare_digest evita vazar informação pelo tempo de resposta.
+    """
+    usuario_ok, senha_ok, senha_hash = _obter_credenciais()
+    u = (usuario_in or "").strip().lower()
+    s = (senha_in or "").strip()
+    u_confere = hmac.compare_digest(u.encode("utf-8"), usuario_ok.encode("utf-8"))
+    if senha_hash:
+        s_confere = _verificar_hash_senha(s, senha_hash)
+    else:
+        s_confere = hmac.compare_digest(s.encode("utf-8"), (senha_ok or "").encode("utf-8"))
+    return u_confere and s_confere
+
+
+def _limpar_texto(valor, max_len=120):
+    """Tira caracteres de controle e espaços das pontas e limita o tamanho.
+
+    Validação no servidor: o limite do campo no navegador pode ser contornado.
+    """
+    texto = re.sub(r"[\x00-\x1f\x7f]", " ", str(valor or "")).strip()
+    return texto[:max_len]
+
+
+def _erro_interno(contexto, exc):
+    """Detalhe técnico vai só para o log do servidor; o usuário vê mensagem genérica."""
+    _log.error("%s: %s", contexto, exc)
+    st.error(f"{contexto}. Tente novamente; se continuar, avise o suporte.")
+
 
 # 1. Configuração da Página
 st.set_page_config(
@@ -28,33 +114,35 @@ def init_supabase() -> Client:
     key = st.secrets["SUPABASE_KEY"]
     return create_client(url, key)
 
-supabase = init_supabase()
+# A conexão só é aberta quando alguma função de banco é chamada (depois do
+# login). Antes, ela rodava no topo do arquivo: se o secret faltasse ou a chave
+# fosse inválida, o app caía antes de desenhar a tela de login.
 
 # ----------------------------------------
 # FUNÇÕES DE INTERAÇÃO COM BANCO SUPABASE
 # ----------------------------------------
 def carregar_dados(tabela):
     try:
-        res = supabase.table(tabela).select("*").execute()
+        res = init_supabase().table(tabela).select("*").execute()
         return res.data if res.data else []
     except Exception as e:
-        st.error(f"Erro ao carregar {tabela}: {e}")
+        _erro_interno(f"Não foi possível carregar {tabela}", e)
         return []
 
 def salvar_registro(tabela, dados_dict):
     try:
-        supabase.table(tabela).insert(dados_dict).execute()
+        init_supabase().table(tabela).insert(dados_dict).execute()
         return True
     except Exception as e:
-        st.error(f"Erro ao salvar na tabela {tabela}: {e}")
+        _erro_interno(f"Não foi possível salvar em {tabela}", e)
         return False
 
 def atualizar_quantidade_estoque(id_prod, nova_qtd):
     try:
-        supabase.table("estoque").update({"quantidade": nova_qtd}).eq("id", id_prod).execute()
+        init_supabase().table("estoque").update({"quantidade": nova_qtd}).eq("id", id_prod).execute()
         return True
     except Exception as e:
-        st.error(f"Erro ao atualizar estoque: {e}")
+        _erro_interno("Não foi possível atualizar o estoque", e)
         return False
 
 # ----------------------------------------
@@ -145,19 +233,47 @@ if not st.session_state.logado:
         )
 
         st.write("")
-        usuario_in = st.text_input("Usuário")
-        senha_in = st.text_input("Senha", type="password")
+        if st.session_state.pop("sessao_expirada", False):
+            st.info("Sua sessão expirou por segurança. Entre novamente.")
+        # Dentro de um formulário, apertar Enter no campo de senha também envia.
+        # Com st.button solto, o Enter só confirmava o campo e nada acontecia.
+        with st.form("form_login", clear_on_submit=False):
+            usuario_in = st.text_input("Usuário")
+            senha_in = st.text_input("Senha", type="password")
+            enviar = st.form_submit_button(
+                "Acessar Painel", type="primary", use_container_width=True, icon=":material/login:"
+            )
 
-        if st.button("Acessar Painel", type="primary", use_container_width=True, icon=":material/login:"):
-            if usuario_in == USUARIO_CORRETO and senha_in == SENHA_CORRETA:
+        if enviar:
+            agora = time.time()
+            bloqueado_ate = st.session_state.get("bloqueado_ate", 0)
+            if agora < bloqueado_ate:
+                st.error(f"Muitas tentativas. Aguarde {int(bloqueado_ate - agora) + 1} segundos.")
+            elif _credenciais_conferem(usuario_in, senha_in):
                 st.session_state.logado = True
-                st.session_state.usuario_logado = usuario_in
+                st.session_state.usuario_logado = (usuario_in or "").strip().lower()
+                st.session_state.tentativas_login = 0
+                st.session_state.login_em = time.time()
                 st.rerun()
             else:
-                st.error("Usuário ou senha incorretos.")
+                tentativas = st.session_state.get("tentativas_login", 0) + 1
+                st.session_state.tentativas_login = tentativas
+                if tentativas >= 5:
+                    st.session_state.bloqueado_ate = agora + 60
+                    st.session_state.tentativas_login = 0
+                    st.error("Muitas tentativas. Aguarde 60 segundos.")
+                else:
+                    st.error("Usuário ou senha incorretos.")
 
 # 4. Sistema Principal
 else:
+    # Sessão com prazo: se alguém esquecer o painel aberto num aparelho, ele fecha sozinho.
+    if time.time() - st.session_state.get("login_em", 0) > SESSAO_MAX_SEGUNDOS:
+        st.session_state.logado = False
+        st.session_state.usuario_logado = ""
+        st.session_state.sessao_expirada = True
+        st.rerun()
+
     st.sidebar.markdown("<h2 style='font-size: 28px;'>Pink Fashion</h2>", unsafe_allow_html=True)
     st.sidebar.markdown("<p style='color: #88607A;'>Navegação do Sistema</p>", unsafe_allow_html=True)
 
@@ -168,14 +284,18 @@ else:
         ":material/payments: Painel Financeiro": "Financeiro",
     }
 
-    escolha_formatada = st.sidebar.radio("", list(menu_opcoes.keys()))
+    escolha_formatada = st.sidebar.radio(
+        "Navegação", list(menu_opcoes.keys()), label_visibility="collapsed"
+    )
     escolha = menu_opcoes[escolha_formatada]
 
     st.sidebar.divider()
-    st.sidebar.markdown(f"<p>Sessão ativa: <br><strong style='color: #C2185B;'>{st.session_state.usuario_logado.capitalize()}</strong></p>", unsafe_allow_html=True)
+    st.sidebar.markdown(f"<p>Sessão ativa: <br><strong style='color: #C2185B;'>{html.escape(st.session_state.usuario_logado.capitalize())}</strong></p>", unsafe_allow_html=True)
     
     if st.sidebar.button("Encerrar Sessão", use_container_width=True, icon=":material/logout:"):
         st.session_state.logado = False
+        st.session_state.usuario_logado = ""
+        st.session_state.login_em = 0
         st.rerun()
 
     # ----------------------------------------
@@ -287,11 +407,12 @@ else:
                 categoria = col2.selectbox("Finalidade / Categoria", ["Uso no Salão (Insumo)", "Revenda ao Cliente"])
 
                 col3, col4, col5 = st.columns(3)
-                qtd = col3.number_input("Quantidade a Adicionar", min_value=1, step=1)
-                custo = col4.number_input("Custo Unitário (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
-                preco_venda = col5.number_input("Preço de Venda (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
+                qtd = col3.number_input("Quantidade a Adicionar", min_value=1, max_value=100000, step=1)
+                custo = col4.number_input("Custo Unitário (R$)", min_value=0.0, max_value=1_000_000.0, value=0.0, step=1.0, format="%.2f")
+                preco_venda = col5.number_input("Preço de Venda (R$)", min_value=0.0, max_value=1_000_000.0, value=0.0, step=1.0, format="%.2f")
 
                 if st.form_submit_button("Salvar Registro / Adicionar Estoque", type="primary", icon=":material/add:"):
+                    nome_produto = _limpar_texto(nome_produto, 100)
                     if nome_produto:
                         estoque_atual = carregar_dados("estoque")
                         prod_existente = next((p for p in estoque_atual if p["produto"].strip().lower() == nome_produto.strip().lower() and p["categoria"] == categoria), None)
@@ -375,9 +496,12 @@ else:
                     servico = col_c.text_input("Serviço Realizado (Ex: Corte, Escova, Coloração, Manicure)")
                     profissional = col_d.text_input("Profissional Responsável")
 
-                    valor_servico = st.number_input("Valor do Serviço (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
+                    valor_servico = st.number_input("Valor do Serviço (R$)", min_value=0.0, max_value=1_000_000.0, value=0.0, step=1.0, format="%.2f")
 
                     if st.form_submit_button("Confirmar Atendimento", type="primary", icon=":material/check_circle:"):
+                        cliente = _limpar_texto(cliente, 100)
+                        servico = _limpar_texto(servico, 150)
+                        profissional = _limpar_texto(profissional, 100)
                         if cliente and servico:
                             data_str = data_atend.strftime("%d/%m/%Y")
 
@@ -417,6 +541,7 @@ else:
                         qtd_vendida = st.number_input("Quantidade Vendida", min_value=1, step=1)
 
                         if st.form_submit_button("Finalizar Venda de Produto", type="primary", icon=":material/shopping_cart:"):
+                            cliente = _limpar_texto(cliente, 100)
                             if cliente:
                                 prod_ref = opcoes_select[prod_selecionado]
                                 if qtd_vendida > int(prod_ref["quantidade"]):
@@ -484,9 +609,10 @@ else:
                 data_mov = col_f2.date_input("Data do Registro", format="DD/MM/YYYY")
 
                 desc_mov = st.text_input("Descrição (Ex: Conta de Luz, Compra de Toalhas, Aluguel)")
-                valor_mov = st.number_input("Valor da Operação (R$)", min_value=0.0, value=0.0, step=1.0, format="%.2f")
+                valor_mov = st.number_input("Valor da Operação (R$)", min_value=0.0, max_value=1_000_000.0, value=0.0, step=1.0, format="%.2f")
 
                 if st.form_submit_button("Lançar no Caixa", type="primary", icon=":material/save:"):
+                    desc_mov = _limpar_texto(desc_mov, 150)
                     if desc_mov and valor_mov > 0:
                         data_str = data_mov.strftime("%d/%m/%Y")
                         tipo_salvo = "Entrada" if "Entrada" in tipo_mov else ("Custo Fixo" if tipo_mov == "Custo Fixo" else "Saída")
